@@ -24,6 +24,8 @@ Der Server meldet sich unter `http://localhost:8080/healthz` mit
 `{"status":"ok"}`. Die Pakete unter `internal/domain/`, `internal/store/` und
 `internal/handler/` sind für die folgenden Entwicklungsphasen vorbereitet.
 
+# Ziel
+
 Ziel ist es ein Verleihsystem für Ski zu entwickeln. Es soll als Webanwendung implementiert werden. 
 Über Reiter "Dashboard", "Ski-Verwaltung", "Personen" und "Reservierungen" soll es möglich sein, innerhalb der Webanwendung zwischen verschiedenen Seiten zu wechseln. Die Funktionsweise der Seiten soll wie folgt sein:
 

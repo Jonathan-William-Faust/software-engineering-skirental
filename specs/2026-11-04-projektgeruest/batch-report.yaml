@@ -40,15 +40,15 @@ traceability:
 protocol_violation: false
 errors: []
 warnings:
-  - severity: HIGH
-    message: "Go is not installed, so go run ., go test ./..., and gofmt could not be executed."
+  - severity: INFO
+    message: "Validation completed after Go 1.27.3 was installed."
 test_results:
   T001:
     command: "go test ./..."
-    passed: 0
+    passed: 4
     failed: 0
     skipped: 0
-    failures: ["Command unavailable: go"]
+    failures: []
   T002:
     command: "File structure inspection"
     passed: 1
@@ -57,18 +57,18 @@ test_results:
     failures: []
   T003:
     command: "go run . and GET /healthz"
-    passed: 0
+    passed: 1
     failed: 0
-    skipped: 1
-    failures: ["Skipped because command unavailable: go"]
+    skipped: 0
+    failures: []
   T004:
-    command: "git diff --check"
+    command: "go fmt ./...; git diff --check"
     passed: 1
     failed: 0
     skipped: 0
     failures: []
   T005:
-    command: "git status --short"
+    command: "git status --short --branch"
     passed: 1
     failed: 0
     skipped: 0
