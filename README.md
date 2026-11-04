@@ -1,4 +1,28 @@
-# Ziel
+# Skiverleih-Prototyp
+
+Das Projekt ist ein leicht verständlicher Prototyp für die spätere
+Skiverleih-Webanwendung. Die erste Phase stellt ein minimales Go-Backend mit
+Health-Endpunkt und der vorgesehenen Verzeichnisstruktur bereit.
+
+## Technischer Stand
+
+- Go-Modul: `skirental`
+- Unterstützte Go-Version: `1.22`
+- Lokaler Server-Port: `8080`
+- Health-Endpunkt: `GET http://localhost:8080/healthz`
+- Speicherung und fachliche Endpunkte folgen in späteren Phasen.
+
+## Entwicklung
+
+```text
+go run .
+go test ./...
+gofmt -w .
+```
+
+Der Server meldet sich unter `http://localhost:8080/healthz` mit
+`{"status":"ok"}`. Die Pakete unter `internal/domain/`, `internal/store/` und
+`internal/handler/` sind für die folgenden Entwicklungsphasen vorbereitet.
 
 Ziel ist es ein Verleihsystem für Ski zu entwickeln. Es soll als Webanwendung implementiert werden. 
 Über Reiter "Dashboard", "Ski-Verwaltung", "Personen" und "Reservierungen" soll es möglich sein, innerhalb der Webanwendung zwischen verschiedenen Seiten zu wechseln. Die Funktionsweise der Seiten soll wie folgt sein:
@@ -48,5 +72,4 @@ Im unteren Feld sollen alle Personen, die eine aktive Reservierung haben, zusamm
 
 # Zusätzliche Anforderungen
 Die Miete oder Reservierungen beginnen stets sofort. Die App soll keine Preise verwalten. Jeder Button soll ein Pop-Up Fenster hervorrufen. In diesem sollen (falls nötig) Informationen eingegeben werden können oder die gewählte Aktion bestätigt werden. Zur Versionierung soll ein GitHub-Repo angelegt werden.
-
 
