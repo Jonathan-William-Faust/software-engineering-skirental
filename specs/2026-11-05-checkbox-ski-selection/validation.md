@@ -12,3 +12,15 @@
      ausführt.
 6. Die drei Workflow-Schritte werden separat committed: Spezifikation,
    Implementierung und Validierung.
+
+## Durchgeführte Nachweise
+
+- `go fmt ./...` und `go test ./...` erfolgreich.
+- `go test -race -count=1 ./...` erfolgreich.
+- `go vet ./...` erfolgreich.
+- `git diff --check` erfolgreich.
+- Die statische Prüfung von [`app.js`](../../web/app.js) bestätigt die
+  Filterung auf verfügbare Ski, Checkbox-Elemente, die gemeinsame Personen-ID
+  und einen `POST /api/loans`-Aufruf pro ausgewähltem Ski.
+- Eine JavaScript-Syntaxprüfung mit Node.js war nicht möglich, da Node.js in
+  der Umgebung nicht installiert ist.
