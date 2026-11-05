@@ -71,10 +71,12 @@ func (ski *Ski) changeStatus(next SkiStatus) error {
 
 type IDPhoto struct {
 	ContentType string
+	DataURL     string
 }
 
-func (photo IDPhoto) IsPNG() bool {
-	return strings.EqualFold(strings.TrimSpace(photo.ContentType), "image/png")
+func (photo IDPhoto) IsSupported() bool {
+	contentType := strings.ToLower(strings.TrimSpace(photo.ContentType))
+	return contentType == "image/png" || contentType == "image/jpeg"
 }
 
 type Person struct {
@@ -83,24 +85,60 @@ type Person struct {
 	LastName       string
 	BirthDate      time.Time
 	Identification string
+	Country        string
+	City           string
+	PostalCode     string
+	Street         string
+	HouseNumber    string
+	MobileNumber   string
 	IDPhoto        IDPhoto
 }
 
-func NewPerson(id, firstName, lastName, identification string, birthDate time.Time, photo IDPhoto) (Person, error) {
+func NewPerson(id, firstName, lastName, identification string, birthDate time.Time, country, city, postalCode, street, houseNumber, mobileNumber string, photo IDPhoto) (Person, error) {
 	if err := ValidatePersonID(id); err != nil {
 		return Person{}, err
 	}
 	if strings.TrimSpace(firstName) == "" || strings.TrimSpace(lastName) == "" ||
-		strings.TrimSpace(identification) == "" || birthDate.IsZero() {
+		strings.TrimSpace(identification) == "" || birthDate.IsZero() ||
+		strings.TrimSpace(country) == "" || strings.TrimSpace(city) == "" || strings.TrimSpace(street) == "" ||
+		strings.TrimSpace(houseNumber) == "" || strings.TrimSpace(mobileNumber) == "" {
 		return Person{}, fmt.Errorf("%w: all identification fields are required", ErrInvalidPerson)
 	}
-	if !photo.IsPNG() {
-		return Person{}, fmt.Errorf("%w: ID photo must be PNG", ErrInvalidIDPhoto)
+	if !validPostalCode(postalCode) {
+		return Person{}, fmt.Errorf("%w: postal code must contain four or five digits", ErrInvalidPerson)
+	}
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if birthDate.After(today) {
+		return Person{}, fmt.Errorf("%w: birth date cannot be in the future", ErrInvalidPerson)
+	}
+	if birthDate.AddDate(18, 0, 0).After(today) {
+		return Person{}, fmt.Errorf("%w: person must be at least 18 years old", ErrInvalidPerson)
+	}
+	if birthDate.AddDate(100, 0, 0).Before(today) {
+		return Person{}, fmt.Errorf("%w: person must not be older than 100 years", ErrInvalidPerson)
+	}
+	if !photo.IsSupported() {
+		return Person{}, fmt.Errorf("%w: ID photo must be PNG or JPEG", ErrInvalidIDPhoto)
 	}
 	return Person{
 		ID: id, FirstName: firstName, LastName: lastName,
-		BirthDate: birthDate, Identification: identification, IDPhoto: photo,
+		BirthDate: birthDate, Identification: identification,
+		Country: country, City: city, PostalCode: postalCode, Street: street,
+		HouseNumber: houseNumber, MobileNumber: mobileNumber, IDPhoto: photo,
 	}, nil
+}
+
+func validPostalCode(value string) bool {
+	if len(value) != 4 && len(value) != 5 {
+		return false
+	}
+	for _, character := range value {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 type Loan struct {

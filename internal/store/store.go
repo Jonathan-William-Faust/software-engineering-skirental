@@ -1,17 +1,28 @@
 package store
 
 import (
+	"crypto/rand"
+	_ "embed"
+	"encoding/base64"
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
 	"skirental/internal/domain"
 )
 
+//go:embed max-mustermann.jpg
+var maxMustermannPhoto []byte
+
+//go:embed maria-musterfrau.jpg
+var mariaMusterfrauPhoto []byte
+
 type Store interface {
 	AddSki(brand, model string) (domain.Ski, error)
 	AddSkiWithSize(brand, model string, size int) (domain.Ski, error)
-	RegisterPerson(firstName, lastName string, birthDate time.Time, identification string, photo domain.IDPhoto) (domain.Person, error)
+	RegisterPerson(firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo domain.IDPhoto) (domain.Person, error)
+	UpdatePerson(id, firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo domain.IDPhoto) (domain.Person, error)
 	SeedDefaultPerson() error
 	ListSkis() []domain.Ski
 	ListPeople() []domain.Person
@@ -75,12 +86,22 @@ func (store *InMemoryStore) SeedDefaultSkis() error {
 	return nil
 }
 
-func (store *InMemoryStore) RegisterPerson(firstName, lastName string, birthDate time.Time, identification string, photo domain.IDPhoto) (domain.Person, error) {
+func (store *InMemoryStore) RegisterPerson(firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo domain.IDPhoto) (domain.Person, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	person, err := store.service.RegisterPerson(firstName, lastName, birthDate, identification, photo)
+	person, err := store.service.RegisterPerson(firstName, lastName, birthDate, identification, country, city, postalCode, street, houseNumber, mobileNumber, photo)
 	if err != nil {
 		return domain.Person{}, fmt.Errorf("register person: %w", err)
+	}
+	return person, nil
+}
+
+func (store *InMemoryStore) UpdatePerson(id, firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo domain.IDPhoto) (domain.Person, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	person, err := store.service.UpdatePerson(id, firstName, lastName, birthDate, identification, country, city, postalCode, street, houseNumber, mobileNumber, photo)
+	if err != nil {
+		return domain.Person{}, fmt.Errorf("update person: %w", err)
 	}
 	return person, nil
 }
@@ -90,10 +111,54 @@ func (store *InMemoryStore) SeedDefaultPerson() error {
 	if err != nil {
 		return fmt.Errorf("parse default person birth date: %w", err)
 	}
-	if _, err := store.RegisterPerson("Max", "Mustermann", birthDate, "ID-MAX-MUSTERMANN", domain.IDPhoto{ContentType: "image/png"}); err != nil {
+	country, postalCode, street, houseNumber, mobileNumber, err := randomDefaultPersonDetails()
+	if err != nil {
+		return fmt.Errorf("generate default person details: %w", err)
+	}
+	photo := domain.IDPhoto{
+		ContentType: "image/jpeg",
+		DataURL:     "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(maxMustermannPhoto),
+	}
+	if _, err := store.RegisterPerson("Max", "Mustermann", birthDate, "ID-MAX-MUSTERMANN", country, "München", postalCode, street, houseNumber, mobileNumber, photo); err != nil {
 		return fmt.Errorf("seed default person: %w", err)
 	}
+	mariaPhoto := domain.IDPhoto{
+		ContentType: "image/jpeg",
+		DataURL:     "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(mariaMusterfrauPhoto),
+	}
+	if _, err := store.RegisterPerson("Maria", "Musterfrau", time.Date(1981, time.January, 1, 0, 0, 0, 0, time.UTC), "ID-MARIA-MUSTERFRAU", "Österreich", "Wien", "1010", "Berggasse", "12", "+436641234567", mariaPhoto); err != nil {
+		return fmt.Errorf("seed second default person: %w", err)
+	}
 	return nil
+}
+
+func randomDefaultPersonDetails() (string, string, string, string, string, error) {
+	streets := []string{"Alpenstraße", "Bergweg", "Gipfelstraße", "Talweg", "Schneestraße"}
+	streetIndex, err := randomInt(len(streets))
+	if err != nil {
+		return "", "", "", "", "", err
+	}
+	houseNumber, err := randomInt(99)
+	if err != nil {
+		return "", "", "", "", "", err
+	}
+	postalCode, err := randomInt(90000)
+	if err != nil {
+		return "", "", "", "", "", err
+	}
+	phone, err := randomInt(10000000)
+	if err != nil {
+		return "", "", "", "", "", err
+	}
+	return "Deutschland", fmt.Sprintf("%05d", 10000+postalCode%90000), streets[streetIndex], fmt.Sprintf("%d", houseNumber+1), fmt.Sprintf("+4915%08d", phone), nil
+}
+
+func randomInt(max int) (int, error) {
+	value, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
+	if err != nil {
+		return 0, err
+	}
+	return int(value.Int64()), nil
 }
 
 func (store *InMemoryStore) ListSkis() []domain.Ski {

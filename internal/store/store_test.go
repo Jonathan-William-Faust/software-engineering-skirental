@@ -61,15 +61,35 @@ func TestDefaultPerson(t *testing.T) {
 		t.Fatal(err)
 	}
 	people := store.ListPeople()
-	if len(people) != 1 {
-		t.Fatalf("seeded person count = %d, want 1", len(people))
+	if len(people) != 2 {
+		t.Fatalf("seeded person count = %d, want 2", len(people))
 	}
-	person := people[0]
-	if person.ID != "P-0001" || person.FirstName != "Max" || person.LastName != "Mustermann" {
+	var person, maria domain.Person
+	for _, candidate := range people {
+		switch candidate.LastName {
+		case "Mustermann":
+			person = candidate
+		case "Musterfrau":
+			maria = candidate
+		}
+	}
+	if person.ID != "P-0001" || person.FirstName != "Max" {
 		t.Fatalf("unexpected default person: %#v", person)
 	}
 	if !person.BirthDate.Equal(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)) {
 		t.Fatalf("default birth date = %v", person.BirthDate)
+	}
+	if person.Country == "" || person.PostalCode == "" || person.Street == "" ||
+		person.HouseNumber == "" || person.MobileNumber == "" {
+		t.Fatalf("default person details are incomplete: %#v", person)
+	}
+	if person.IDPhoto.ContentType != "image/jpeg" || len(person.IDPhoto.DataURL) < 100 {
+		t.Fatalf("default person photo was not seeded: %#v", person.IDPhoto)
+	}
+	if maria.FirstName != "Maria" || maria.LastName != "Musterfrau" ||
+		maria.Country != "Österreich" ||
+		!maria.BirthDate.Equal(time.Date(1981, time.January, 1, 0, 0, 0, 0, time.UTC)) {
+		t.Fatalf("unexpected second default person: %#v", maria)
 	}
 }
 
@@ -82,7 +102,7 @@ func TestStoreLifecycleAndErrors(t *testing.T) {
 	if ski.ID != "S-0001" {
 		t.Fatalf("user-added ski ID = %q, want S-0001", ski.ID)
 	}
-	person, err := store.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", domain.IDPhoto{ContentType: "image/png"})
+	person, err := store.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", domain.IDPhoto{ContentType: "image/png"})
 	if err != nil {
 		t.Fatal(err)
 	}

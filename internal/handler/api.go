@@ -35,6 +35,8 @@ func (api *API) handleAPI(response http.ResponseWriter, request *http.Request) {
 		api.skis(response, request)
 	case path == "people":
 		api.people(response, request)
+	case strings.HasPrefix(path, "people/"):
+		api.personByID(response, request, strings.TrimPrefix(path, "people/"))
 	case path == "loans":
 		api.loans(response, request)
 	case strings.HasPrefix(path, "loans/"):
@@ -59,8 +61,15 @@ type personRequest struct {
 	LastName       string `json:"last_name"`
 	BirthDate      string `json:"birth_date"`
 	Identification string `json:"identification"`
+	Country        string `json:"country"`
+	City           string `json:"city"`
+	PostalCode     string `json:"postal_code"`
+	Street         string `json:"street"`
+	HouseNumber    string `json:"house_number"`
+	MobileNumber   string `json:"mobile_number"`
 	Photo          struct {
 		ContentType string `json:"content_type"`
+		DataURL     string `json:"data_url"`
 	} `json:"photo"`
 }
 
@@ -128,12 +137,13 @@ func (api *API) people(response http.ResponseWriter, request *http.Request) {
 		if !decodeJSON(response, request, &input) {
 			return
 		}
+
 		birthDate, err := parseBirthDate(input.BirthDate)
 		if err != nil {
 			writeError(response, http.StatusBadRequest, err.Error())
 			return
 		}
-		person, err := api.store.RegisterPerson(input.FirstName, input.LastName, birthDate, input.Identification, domain.IDPhoto{ContentType: input.Photo.ContentType})
+		person, err := api.store.RegisterPerson(input.FirstName, input.LastName, birthDate, input.Identification, input.Country, input.City, input.PostalCode, input.Street, input.HouseNumber, input.MobileNumber, domain.IDPhoto{ContentType: input.Photo.ContentType, DataURL: input.Photo.DataURL})
 		if err != nil {
 			writeDomainError(response, err)
 			return
@@ -143,6 +153,28 @@ func (api *API) people(response http.ResponseWriter, request *http.Request) {
 	default:
 		writeMethodNotAllowed(response, http.MethodGet, http.MethodPost)
 	}
+}
+
+func (api *API) personByID(response http.ResponseWriter, request *http.Request, id string) {
+	if request.Method != http.MethodPut {
+		writeMethodNotAllowed(response, http.MethodPut)
+		return
+	}
+	var input personRequest
+	if !decodeJSON(response, request, &input) {
+		return
+	}
+	birthDate, err := parseBirthDate(input.BirthDate)
+	if err != nil {
+		writeError(response, http.StatusBadRequest, err.Error())
+		return
+	}
+	person, err := api.store.UpdatePerson(id, input.FirstName, input.LastName, birthDate, input.Identification, input.Country, input.City, input.PostalCode, input.Street, input.HouseNumber, input.MobileNumber, domain.IDPhoto{ContentType: input.Photo.ContentType, DataURL: input.Photo.DataURL})
+	if err != nil {
+		writeDomainError(response, err)
+		return
+	}
+	writeJSON(response, http.StatusOK, person)
 }
 
 func parseBirthDate(value string) (time.Time, error) {
@@ -157,11 +189,15 @@ func parseBirthDate(value string) (time.Time, error) {
 
 func validateBirthDate(birthDate time.Time) (time.Time, error) {
 	now := time.Now().UTC()
-	if birthDate.After(now) {
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if birthDate.After(today) {
 		return time.Time{}, fmt.Errorf("birth_date cannot be in the future")
 	}
-	if birthDate.AddDate(18, 0, 0).After(now) {
+	if birthDate.AddDate(18, 0, 0).After(today) {
 		return time.Time{}, fmt.Errorf("person must be at least 18 years old")
+	}
+	if birthDate.AddDate(100, 0, 0).Before(today) {
+		return time.Time{}, fmt.Errorf("person must not be older than 100 years")
 	}
 	return birthDate, nil
 }

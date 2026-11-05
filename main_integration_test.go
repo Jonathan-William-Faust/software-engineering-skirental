@@ -14,7 +14,7 @@ func TestServerServesFrontendHealthAndRentalFlow(t *testing.T) {
 	request(t, server.Handler, http.MethodGet, "/healthz", "", http.StatusOK)
 
 	ski := postJSON(t, server.Handler, "/api/skis", `{"brand":"Atomic","model":"Redster"}`, http.StatusCreated)
-	person := postJSON(t, server.Handler, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","photo":{"content_type":"image/png"}}`, http.StatusCreated)
+	person := postJSON(t, server.Handler, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusCreated)
 	skiID := stringField(t, ski, "ID")
 	personID := stringField(t, person, "ID")
 
@@ -27,7 +27,7 @@ func TestServerServesFrontendHealthAndRentalFlow(t *testing.T) {
 func TestReturningLoanMakesSkiAvailableForAllViews(t *testing.T) {
 	server := newServer()
 	ski := postJSON(t, server.Handler, "/api/skis", `{"brand":"Atomic","model":"Redster"}`, http.StatusCreated)
-	person := postJSON(t, server.Handler, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","photo":{"content_type":"image/png"}}`, http.StatusCreated)
+	person := postJSON(t, server.Handler, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusCreated)
 	skiID := stringField(t, ski, "ID")
 	personID := stringField(t, person, "ID")
 
@@ -59,7 +59,7 @@ func TestServerReservationLifecycle(t *testing.T) {
 	server := newServer()
 	firstSki := postJSON(t, server.Handler, "/api/skis", `{"brand":"Atomic","model":"Redster"}`, http.StatusCreated)
 	secondSki := postJSON(t, server.Handler, "/api/skis", `{"brand":"Head","model":"Supershape"}`, http.StatusCreated)
-	person := postJSON(t, server.Handler, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","photo":{"content_type":"image/png"}}`, http.StatusCreated)
+	person := postJSON(t, server.Handler, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusCreated)
 	reservation := postJSON(t, server.Handler, "/api/reservations", `{"ski_id":"`+stringField(t, firstSki, "ID")+`","person_id":"`+stringField(t, person, "ID")+`"}`, http.StatusCreated)
 	reservationID := stringField(t, reservation, "ID")
 	requestBody := `{"ski_id":"` + stringField(t, secondSki, "ID") + `"}`

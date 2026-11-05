@@ -70,11 +70,22 @@ func TestSeededServerStartsWithDefaultPerson(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&people); err != nil {
 		t.Fatal(err)
 	}
-	if len(people) != 1 || people[0].ID != "P-0001" ||
-		people[0].FirstName != "Max" || people[0].LastName != "Mustermann" {
+	foundMax := false
+	for _, person := range people {
+		if person.ID == "P-0001" && person.FirstName == "Max" && person.LastName == "Mustermann" {
+			foundMax = true
+		}
+	}
+	if len(people) != 2 || !foundMax {
 		t.Fatalf("unexpected seeded people: %#v", people)
 	}
-	if !strings.HasPrefix(people[0].BirthDate, "2000-01-01") {
-		t.Fatalf("unexpected default birth date: %q", people[0].BirthDate)
+	var maxBirthDate string
+	for _, person := range people {
+		if person.ID == "P-0001" {
+			maxBirthDate = person.BirthDate
+		}
+	}
+	if !strings.HasPrefix(maxBirthDate, "2000-01-01") {
+		t.Fatalf("unexpected default birth date: %q", maxBirthDate)
 	}
 }

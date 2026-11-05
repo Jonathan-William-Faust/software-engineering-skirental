@@ -14,6 +14,52 @@ async function request(path, options = {}) {
   return body;
 }
 
+function promptPostalCode(defaultValue = "") {
+  while (true) {
+    const value = prompt("PLZ (4 oder 5 Ziffern):", defaultValue);
+    if (value === null) return null;
+    if (/^\d{4,5}$/.test(value.trim())) return value.trim();
+    alert("Die PLZ muss aus vier oder fünf Ziffern bestehen.");
+  }
+}
+
+function selectIDPhoto() {
+  return new Promise(resolve => {
+    const input = document.createElement("input");
+    const cleanup = () => input.remove();
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,.png,.jpg,.jpeg";
+    input.addEventListener("change", () => {
+     const file = input.files?.[0];
+     cleanup();
+     const extension = file?.name.toLowerCase().split(".").pop();
+     const contentType = file?.type.toLowerCase() ||
+       (extension === "jpg" || extension === "jpeg" ? "image/jpeg" : extension === "png" ? "image/png" : "");
+     if (!file || !["image/png", "image/jpeg"].includes(contentType)) {
+       alert("Bitte wählen Sie eine PNG- oder JPEG-Datei als Ausweisfoto aus.");
+       resolve(selectIDPhoto());
+       return;
+     }
+     const reader = new FileReader();
+     reader.addEventListener("load", () => resolve({
+       content_type: file.type,
+       data_url: reader.result
+     }), { once: true });
+     reader.addEventListener("error", () => {
+       alert("Das Ausweisfoto konnte nicht gelesen werden.");
+       resolve(selectIDPhoto());
+     }, { once: true });
+     reader.readAsDataURL(file);
+    }, { once: true });
+    document.body.append(input);
+    input.click();
+    input.addEventListener("cancel", () => {
+      cleanup();
+      resolve(null);
+    }, { once: true });
+  });
+}
+
 async function refresh() {
   try {
     [state.skis, state.people, state.loans, state.reservations] = await Promise.all([
@@ -33,10 +79,14 @@ function render() {
     const action = status === "verliehen" ? `<button data-return="${id}">Leihe beenden</button>` : "";
     return [id, field(ski, "brand"), field(ski, "model"), field(ski, "size") || "-", `<span class="status ${statusClass(status)}">${status}</span>`, action];
   }));
-  renderTable("#people-table", ["Person-ID", "Name", "Ausweis-Nummer", "Ausgeliehene Ski", "Aktion"], [...state.people].sort(comparePeople).map(person => {
+  renderTable("#people-table", ["Person-ID", "Name", "Adresse", "Handynummer", "Ausweis-Nummer", "Ausweisdokument", "Ausgeliehene Ski", "Aktion"], [...state.people].sort(comparePeople).map(person => {
     const id = field(person, "id");
     const activeLoans = state.loans.filter(loan => field(loan, "personID") === id && !field(loan, "endedAt"));
     const rented = sortLoanSkis(activeLoans).map(loan => field(loan, "skiID")).join(", ");
+    const address = `${field(person, "street")} ${field(person, "houseNumber")}, ${field(person, "postalCode")} ${field(person, "city")}, ${field(person, "country")}`;
+    const photoAction = field(person, "idPhoto")?.dataUrl || field(person, "IDPhoto")?.DataURL
+      ? `<button data-person-photo="${id}">Ausweis ansehen</button>` : "-";
+    const editAction = `<button data-edit-person="${id}">Stammdaten bearbeiten</button>`;
     const returnActions = activeLoans.length
       ? `<button data-person-return="${id}">Ausleihe beenden</button>`
       : "";
@@ -47,8 +97,8 @@ function render() {
          <button data-edit-reservation="${field(reservation, "id")}">Reservierung bearbeiten</button>
          <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`).join(" ")
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
-    const action = `${returnActions} ${reservationActions}`;
-    return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, field(person, "identification"), rented || "-", action];
+    const action = `${editAction} ${returnActions} ${reservationActions}`;
+    return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, address, field(person, "mobileNumber"), field(person, "identification"), photoAction, rented || "-", action];
   }));
   renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Ski-ID", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
     const id = field(reservation, "id");
@@ -98,6 +148,24 @@ function renderDashboard() {
   }).catch(error => message(error.message, true));
 }
 
+function viewPersonPhoto(personID) {
+  const person = state.people.find(item => field(item, "id") === personID);
+  const photo = field(person, "idPhoto") || field(person, "IDPhoto");
+  const dataURL = field(photo, "dataUrl") || field(photo, "DataURL");
+  if (!dataURL) {
+    alert("Für diese Person ist kein Ausweisdokument hinterlegt.");
+    return;
+  }
+  const dialog = document.createElement("dialog");
+  dialog.innerHTML = `
+    <h3>Ausweisdokument von ${field(person, "firstName")} ${field(person, "lastName")}</h3>
+    <img src="${dataURL}" alt="Ausweisdokument" style="max-width: min(90vw, 700px); max-height: 70vh;">
+    <form method="dialog"><button>Schließen</button></form>`;
+  document.body.append(dialog);
+  dialog.showModal();
+  dialog.addEventListener("close", () => dialog.remove(), { once: true });
+}
+
 function statusClass(status) {
   return status === "verfügbar" ? "available" : status === "reserviert" ? "reserved" : "rented";
 }
@@ -120,9 +188,52 @@ async function addSki() {
   await refresh();
 }
 
-function promptRequired(label) {
+async function editPerson(personID) {
+  const person = state.people.find(item => field(item, "id") === personID);
+  if (!person) return;
+  const first_name = promptRequired("Vorname:", field(person, "firstName"));
+  if (first_name === null) return;
+  const last_name = promptRequired("Nachname:", field(person, "lastName"));
+  if (last_name === null) return;
+  const currentBirthDate = new Date(field(person, "birthDate")).toLocaleDateString("de-DE");
+  const birth_date = promptBirthDate(currentBirthDate);
+  if (birth_date === null) return;
+  const identification = promptRequired("Ausweis-Nummer:", field(person, "identification"));
+  if (identification === null) return;
+  const country = promptRequired("Land:", field(person, "country"));
+  if (country === null) return;
+  const city = promptRequired("Stadt:", field(person, "city"));
+  if (city === null) return;
+  const postal_code = promptPostalCode(field(person, "postalCode"));
+  if (postal_code === null) return;
+  const street = promptRequired("Straße:", field(person, "street"));
+  if (street === null) return;
+  const house_number = promptRequired("Hausnummer:", field(person, "houseNumber"));
+  if (house_number === null) return;
+  const mobile_number = promptRequired("Handynummer:", field(person, "mobileNumber"));
+  if (mobile_number === null) return;
   while (true) {
-    const value = prompt(label);
+    const photo = await selectIDPhoto();
+    if (photo === null) return;
+    try {
+      await request(`/api/people/${personID}`, { method: "PUT", body: JSON.stringify({
+        first_name, last_name, birth_date, identification, country, city, postal_code,
+        street, house_number, mobile_number, photo
+      }) });
+      break;
+    } catch (error) {
+      if (!error.message.toLowerCase().includes("id photo") &&
+          !error.message.toLowerCase().includes("png") &&
+          !error.message.toLowerCase().includes("jpeg")) throw error;
+      alert(error.message);
+    }
+  }
+  await refresh();
+}
+
+function promptRequired(label, defaultValue = "") {
+  while (true) {
+    const value = prompt(label, defaultValue);
     if (value === null) return null;
     if (value.trim()) return value.trim();
     alert("Dieses Feld darf nicht leer sein.");
@@ -147,15 +258,40 @@ async function registerPerson() {
   if (birth_date === null) return;
   const identification = promptRequired("Ausweis-Nummer:");
   if (identification === null) return;
-  const content_type = promptRequired("Foto-MIME-Typ (image/png):");
-  if (content_type === null) return;
-  await request("/api/people", { method: "POST", body: JSON.stringify({ first_name, last_name, birth_date, identification, photo: { content_type } }) });
+  const country = promptRequired("Land:");
+  if (country === null) return;
+  const city = promptRequired("Stadt:");
+  if (city === null) return;
+  const postal_code = promptPostalCode();
+  if (postal_code === null) return;
+  const street = promptRequired("Straße:");
+  if (street === null) return;
+  const house_number = promptRequired("Hausnummer:");
+  if (house_number === null) return;
+  const mobile_number = promptRequired("Handynummer:");
+  if (mobile_number === null) return;
+  while (true) {
+    const photo = await selectIDPhoto();
+    if (photo === null) return;
+    try {
+      await request("/api/people", { method: "POST", body: JSON.stringify({
+        first_name, last_name, birth_date, identification, country, city, postal_code,
+        street, house_number, mobile_number, photo
+      }) });
+      break;
+    } catch (error) {
+      if (!error.message.toLowerCase().includes("id photo") &&
+          !error.message.toLowerCase().includes("png") &&
+          !error.message.toLowerCase().includes("jpeg")) throw error;
+      alert(error.message);
+    }
+  }
   await refresh();
 }
 
-function promptBirthDate() {
+function promptBirthDate(defaultValue = "") {
   while (true) {
-    const value = prompt("Geburtsdatum (DD.MM.YYYY):");
+    const value = prompt("Geburtsdatum (DD.MM.YYYY):", defaultValue);
     if (value === null) return null;
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(value)) {
       const [day, month, year] = value.split(".").map(Number);
@@ -171,6 +307,12 @@ function promptBirthDate() {
         eighteenthBirthday.setUTCFullYear(eighteenthBirthday.getUTCFullYear() + 18);
         if (eighteenthBirthday > today) {
           alert("Die Person muss mindestens 18 Jahre alt sein.");
+          continue;
+        }
+        const hundredthBirthday = new Date(date);
+        hundredthBirthday.setUTCFullYear(hundredthBirthday.getUTCFullYear() + 100);
+        if (hundredthBirthday < today) {
+          alert("Die Person darf nicht älter als 100 Jahre sein.");
           continue;
         }
         return value;
@@ -192,7 +334,12 @@ async function startLoan() {
 async function startLoanForPerson(personID) {
   const ski_ids = await selectAvailableSkis();
   if (!ski_ids.length || !confirm("Ausleihe für die ausgewählten Ski starten?")) return;
-  await startLoans(ski_ids, personID);
+  try {
+    await startLoans(ski_ids, personID);
+  } catch (error) {
+    alert(`Ausleihe konnte nicht gestartet werden: ${error.message}`);
+    return;
+  }
   await refresh();
 }
 
@@ -321,7 +468,9 @@ function selectOnePerson(people) {
     const dialog = document.createElement("dialog");
     const options = people.map((person, index) => {
       const id = field(person, "id");
-      const name = `${field(person, "lastName")}, ${field(person, "firstName")} (${id})`;
+      const address = `${field(person, "street")} ${field(person, "houseNumber")}, ${field(person, "postalCode")} ${field(person, "city")}, ${field(person, "country")}`;
+      const birthDate = new Date(field(person, "birthDate")).toLocaleDateString("de-DE");
+      const name = `${field(person, "lastName")}, ${field(person, "firstName")} – geboren am ${birthDate} – ${address} – ${id}`;
       return `<label><input type="radio" name="person" value="${id}"${index === 0 ? " checked" : ""}> ${name}</label>`;
     }).join("");
     dialog.innerHTML = `
@@ -355,6 +504,8 @@ document.addEventListener("click", async event => {
   try {
     if (event.target.dataset.action === "add-ski") await addSki();
     if (event.target.dataset.action === "register-person") await registerPerson();
+    if (event.target.dataset.editPerson) await editPerson(event.target.dataset.editPerson);
+    if (event.target.dataset.personPhoto) viewPersonPhoto(event.target.dataset.personPhoto);
     if (event.target.dataset.action === "start-loan") await startLoan();
     if (event.target.dataset.personLoan) await startLoanForPerson(event.target.dataset.personLoan);
     if (event.target.dataset.personReturn) await endLoansForPerson(event.target.dataset.personReturn);

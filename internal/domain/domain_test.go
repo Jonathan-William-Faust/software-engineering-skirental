@@ -43,17 +43,34 @@ func TestSkiStatusTransitions(t *testing.T) {
 	}
 }
 
-func TestPersonRequiresPNGPhoto(t *testing.T) {
-	_, err := NewPerson("P-0001", "Ada", "Lovelace", "ID-1", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), IDPhoto{ContentType: "image/jpeg"})
+func TestPersonRequiresSupportedPhoto(t *testing.T) {
+	_, err := NewPerson("P-0001", "Ada", "Lovelace", "ID-1", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/gif"})
 	if !errors.Is(err, ErrInvalidIDPhoto) {
 		t.Fatalf("invalid photo error = %v, want ErrInvalidIDPhoto", err)
 	}
-	person, err := NewPerson("P-0001", "Ada", "Lovelace", "ID-1", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), IDPhoto{ContentType: "image/png"})
+	person, err := NewPerson("P-0001", "Ada", "Lovelace", "ID-1", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if person.ID != "P-0001" {
 		t.Fatalf("person ID = %q", person.ID)
+	}
+	if _, err := NewPerson("P-0002", "Grace", "Hopper", "ID-2", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/jpeg"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPersonRequiresValidPostalCode(t *testing.T) {
+	_, err := NewPerson("P-0001", "Ada", "Lovelace", "ID-1", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "Deutschland", "Berlin", "1011A", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
+	if !errors.Is(err, ErrInvalidPerson) {
+		t.Fatalf("invalid postal code error = %v, want ErrInvalidPerson", err)
+	}
+}
+
+func TestPersonMustNotBeOlderThan100(t *testing.T) {
+	_, err := NewPerson("P-0001", "Ada", "Lovelace", "ID-1", time.Now().UTC().AddDate(-101, 0, 0), "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
+	if !errors.Is(err, ErrInvalidPerson) {
+		t.Fatalf("age error = %v, want ErrInvalidPerson", err)
 	}
 }
 
@@ -63,7 +80,7 @@ func TestRentalLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	person, err := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", IDPhoto{ContentType: "image/png"})
+	person, err := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +106,7 @@ func TestReservationTransitionsAndConflicts(t *testing.T) {
 	service := NewRentalService()
 	ski, _ := service.AddSki("Atomic", "Redster")
 	otherSki, _ := service.AddSki("Head", "Supershape")
-	person, _ := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", IDPhoto{ContentType: "image/png"})
+	person, _ := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
 	reservation, err := service.CreateReservation(ski.ID, person.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +146,7 @@ func TestReservationTransitionsAndConflicts(t *testing.T) {
 func TestReservationCanBeDiscarded(t *testing.T) {
 	service := NewRentalService()
 	ski, _ := service.AddSki("Atomic", "Redster")
-	person, _ := service.RegisterPerson("Ada", "Lovelace", time.Now(), "ID-1", IDPhoto{ContentType: "image/png"})
+	person, _ := service.RegisterPerson("Ada", "Lovelace", time.Now().AddDate(-30, 0, 0), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
 	reservation, err := service.CreateReservation(ski.ID, person.ID)
 	if err != nil {
 		t.Fatal(err)

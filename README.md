@@ -31,6 +31,13 @@ Beim Hinzufügen eines Skis werden Marke, Modell und Länge in Zentimetern
 abgefragt. Leere Eingaben sind nicht zulässig; ein Abbruch beendet den
 gesamten Vorgang.
 
+Bei der Personenregistrierung werden Land und Stadt sowie die übrigen
+Adressdaten erfasst. Die Adresse wird im Personen-Tab einschließlich Stadt
+angezeigt. PNG- und JPEG-Ausweisfotos werden akzeptiert.
+Ungültige oder fehlende Dateien werden als Pop-up gemeldet und die Fotoauswahl
+wird wiederholt. Zusätzlich werden Land, PLZ, Straße, Hausnummer und
+Handynummer erfasst. Personen dürfen höchstens 100 Jahre alt sein.
+
 Bei der Personenregistrierung wird das Geburtsdatum im Format `DD.MM.YYYY`
 abgefragt. Ungültige, zukünftige oder zu junge Datumsangaben werden als Pop-up
 gemeldet und können direkt erneut eingegeben werden. Das Mindestalter beträgt
@@ -119,7 +126,7 @@ Jeder bereits verliehene Ski soll einen roten Button "Leihe beenden" besitzen, �
 
 # Personen
 Das Personen-Tab soll aus zwei Komponenten bestehen.
-Im oberen Feld soll es möglich sein, über einen Button "Neue Person registrieren" eine neue Person zu registrieren. Durch Anklicken des Buttons soll sich ein Pop-Up Fenster öffnen, das die Attribute "Vorname", "Nachname",  "Geburtsdatum", "Ausweis-Nummer" abfragt. Um die Registrierung abzuschließen, soll es nötig sein, ein Ausweisfoto hochzuladen (png-Format). Bei Registrierung soll einer Person automatisch eine eindeutige "Person-Id" zugewiesen werden im Format "P-" gefolgt von einer vierstelligen Zahl.
+Im oberen Feld soll es möglich sein, über einen Button "Neue Person registrieren" eine neue Person zu registrieren. Durch Anklicken des Buttons soll sich ein Pop-Up Fenster öffnen, das die Attribute "Vorname", "Nachname", "Geburtsdatum", "Ausweis-Nummer", "Land", "PLZ", "Straße", "Hausnummer" und "Handynummer" abfragt. Um die Registrierung abzuschließen, soll es nötig sein, ein Ausweisfoto hochzuladen (png- oder jpeg-Format). Bei Registrierung soll einer Person automatisch eine eindeutige "Person-Id" zugewiesen werden im Format "P-" gefolgt von einer vierstelligen Zahl.
 
 Im unteren Feld des Personen-Tab werden alle registrierten Personen alphabetisch in tabellarischer Struktur aufgelistet. Für jede Person sollen die Attribute
 - "Person-Id"
@@ -128,6 +135,12 @@ Im unteren Feld des Personen-Tab werden alle registrierten Personen alphabetisch
 - "Ausgeliehene Ski" (Aufzählund aller Ski, die aktuell an diese Person verliehen sind)
 - "Ausweis-Nummer"
 - "Ausweis-Foto"
+- "Adresse" und "Handynummer"
+
+Über den Button "Ausweis ansehen" kann das hinterlegte Ausweisdokument im
+Personen-Tab angezeigt werden. Jede Person besitzt außerdem den Button
+"Stammdaten bearbeiten". Die Eingaben werden mit denselben Pflichtfeld-,
+Alters-, PLZ- und Fotoformatprüfungen wie bei der Neuanlage validiert.
 
 Für jede Person, die keine Reervierung getätigt hat, soll ein grüner Button "Neue Ausleihe" existieren, über den eine neue Ausleihe aus den verfügbaren Skiern gemacht werden kann.
 

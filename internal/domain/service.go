@@ -38,14 +38,26 @@ func (service *RentalService) AddSkiWithSize(brand, model string, size int) (Ski
 	return ski, nil
 }
 
-func (service *RentalService) RegisterPerson(firstName, lastName string, birthDate time.Time, identification string, photo IDPhoto) (Person, error) {
+func (service *RentalService) RegisterPerson(firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo IDPhoto) (Person, error) {
 	id, err := service.ids.NewPersonID()
 	if err != nil {
 		return Person{}, fmt.Errorf("generate person ID: %w", err)
 	}
-	person, err := NewPerson(id, firstName, lastName, identification, birthDate, photo)
+	person, err := NewPerson(id, firstName, lastName, identification, birthDate, country, city, postalCode, street, houseNumber, mobileNumber, photo)
 	if err != nil {
 		return Person{}, fmt.Errorf("register person: %w", err)
+	}
+	service.people[id] = &person
+	return person, nil
+}
+
+func (service *RentalService) UpdatePerson(id, firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo IDPhoto) (Person, error) {
+	if _, ok := service.people[id]; !ok {
+		return Person{}, fmt.Errorf("%w: %s", ErrPersonNotFound, id)
+	}
+	person, err := NewPerson(id, firstName, lastName, identification, birthDate, country, city, postalCode, street, houseNumber, mobileNumber, photo)
+	if err != nil {
+		return Person{}, fmt.Errorf("update person: %w", err)
 	}
 	service.people[id] = &person
 	return person, nil
