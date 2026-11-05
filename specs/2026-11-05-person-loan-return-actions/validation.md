@@ -13,3 +13,17 @@
    - die Aktion verschwindet nach erfolgreicher Rückgabe aus der
      Personenansicht.
 7. Spezifikation, Implementierung und Validierung werden separat committed.
+
+## Durchgeführte Nachweise
+
+- `go fmt ./...` und `go test ./...` erfolgreich.
+- `go test -race -count=1 ./...` erfolgreich.
+- `go vet ./...` und `git diff --check` erfolgreich.
+- Der Integrationstest `TestReturningLoanMakesSkiAvailableForAllViews`
+  bestätigt, dass die Backend-Rückgabe den Ski auf `verfügbar` setzt und den
+  Loan mit gesetztem `EndedAt` zurückliefert.
+- Die statische Frontend-Prüfung bestätigt, dass aktive Loans im Personen-Tab
+  mit `Ausleihe beenden` gerendert werden, dieselbe
+  `DELETE /api/loans/{skiID}`-Aktion nutzen und danach `refresh()` ausführen.
+- Damit liegt die Ursache der ursprünglichen fehlenden Anzeige im Frontend,
+  nicht in der internen Backend-Verwaltung.
