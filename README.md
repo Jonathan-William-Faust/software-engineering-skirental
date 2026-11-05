@@ -1,8 +1,8 @@
 # Skiverleih-Prototyp
 
-Das Projekt ist ein leicht verständlicher Prototyp für die spätere
-Skiverleih-Webanwendung. Die erste Phase stellt ein minimales Go-Backend mit
-Health-Endpunkt und der vorgesehenen Verzeichnisstruktur bereit.
+Das Projekt ist ein leicht verständlicher Prototyp für eine
+Skiverleih-Webanwendung. Es enthält ein Go-Backend, einen thread-sicheren
+In-Memory-Store und ein statisches HTML/JavaScript-Frontend.
 
 ## Technischer Stand
 
@@ -10,7 +10,9 @@ Health-Endpunkt und der vorgesehenen Verzeichnisstruktur bereit.
 - Unterstützte Go-Version: `1.22`
 - Lokaler Server-Port: `8080`
 - Health-Endpunkt: `GET http://localhost:8080/healthz`
-- Speicherung und fachliche Endpunkte folgen in späteren Phasen.
+- Weboberfläche: `http://localhost:8080/`
+- API: `/api/dashboard`, `/api/skis`, `/api/people`, `/api/loans` und
+  `/api/reservations`
 
 ## Entwicklung
 
@@ -21,8 +23,34 @@ gofmt -w .
 ```
 
 Der Server meldet sich unter `http://localhost:8080/healthz` mit
-`{"status":"ok"}`. Die Pakete unter `internal/domain/`, `internal/store/` und
-`internal/handler/` sind für die folgenden Entwicklungsphasen vorbereitet.
+`{"status":"ok"}`. Die Weboberfläche bietet Dashboard, Ski-Verwaltung,
+Personen und Reservierungen. Aktionen werden über Dialoge eingegeben und
+anschließend über die JSON-API ausgeführt.
+
+## API-Kurzreferenz
+
+| Methode | Pfad | Zweck |
+|---|---|---|
+| `GET` | `/api/dashboard` | Kennzahlen |
+| `GET`, `POST` | `/api/skis` | Ski auflisten oder anlegen |
+| `GET`, `POST` | `/api/people` | Personen auflisten oder registrieren |
+| `GET`, `POST` | `/api/loans` | Ausleihen auflisten oder starten |
+| `DELETE` | `/api/loans/{skiID}` | Ausleihe beenden |
+| `GET`, `POST` | `/api/reservations` | Reservierungen auflisten oder anlegen |
+| `PUT`, `DELETE` | `/api/reservations/{id}` | Reservierung bearbeiten oder verwerfen |
+| `POST` | `/api/reservations/{id}/convert` | Reservierung in Ausleihe umwandeln |
+
+## Qualität
+
+```text
+go fmt ./...
+go test ./...
+go test -race ./...
+go vet ./...
+git diff --check
+```
+
+Ein separater Linter ist im Projekt nicht eingerichtet.
 
 # Ziel
 
@@ -74,4 +102,3 @@ Im unteren Feld sollen alle Personen, die eine aktive Reservierung haben, zusamm
 
 # Zusätzliche Anforderungen
 Die Miete oder Reservierungen beginnen stets sofort. Die App soll keine Preise verwalten. Jeder Button soll ein Pop-Up Fenster hervorrufen. In diesem sollen (falls nötig) Informationen eingegeben werden können oder die gewählte Aktion bestätigt werden. Zur Versionierung soll ein GitHub-Repo angelegt werden.
-
