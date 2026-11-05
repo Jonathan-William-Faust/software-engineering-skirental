@@ -1,0 +1,30 @@
+feature: period-aware-availability
+branch: feature/2026-11-05-period-aware-availability
+implementation_commit: 978b071
+validation:
+  - criterion: overlapping active reservations are excluded
+    status: passed
+    evidence: internal/domain/domain_test.go
+  - criterion: period-aware availability API returns only eligible skis
+    status: passed
+    evidence: internal/handler/api_test.go
+  - criterion: period is requested before ski selection
+    status: passed
+    evidence: web/app.js
+  - criterion: reservation conversion is limited to its start date
+    status: passed
+    evidence: internal/domain/domain_test.go
+  - criterion: go tests
+    status: passed
+    command: go test ./...
+  - criterion: race tests
+    status: passed
+    command: go test -race ./...
+  - criterion: vet
+    status: passed
+    command: go vet ./...
+  - criterion: formatting and diff checks
+    status: passed
+    commands:
+      - go fmt ./...
+      - git diff --check
