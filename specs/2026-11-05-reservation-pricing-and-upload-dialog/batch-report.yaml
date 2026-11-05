@@ -1,0 +1,31 @@
+feature: reservation-pricing-and-upload-dialog
+branch: feature/2026-11-05-reservation-pricing-and-upload-dialog
+status: passed
+criteria:
+  - id: upload-dialog
+    status: passed
+    evidence: web/app.js implements a visible dialog containing "Datei auswählen" and preserves PNG/JPEG validation and Data-URL upload.
+  - id: rental-periods
+    status: passed
+    evidence: internal/domain and internal/handler validate inclusive YYYY-MM-DD periods, future reservations, and same-day loan starts.
+  - id: pricing
+    status: passed
+    evidence: Ski stores 1000-2000 cent daily prices; loans expose inclusive days and total cents; API and UI display prices.
+  - id: regression
+    status: passed
+    evidence: go test ./... and go test -race ./... passed, including existing lifecycle/API/store tests.
+  - id: quality
+    status: passed
+    evidence: go fmt ./..., go vet ./..., and git diff --check passed.
+manual_checks:
+  - status: source-verified
+    evidence: upload, period, reservation, return, conversion, and price flows are wired through the existing frontend event handlers.
+  - status: not-run
+    evidence: interactive browser verification was not available in the command-only validation environment.
+commands:
+  - go fmt ./...
+  - go test ./...
+  - go test -race ./...
+  - go vet ./...
+  - git diff --check
+  - git diff main...HEAD --stat
