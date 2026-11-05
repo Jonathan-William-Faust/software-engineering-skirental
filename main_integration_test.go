@@ -24,6 +24,37 @@ func TestServerServesFrontendHealthAndRentalFlow(t *testing.T) {
 	assertDashboard(t, server.Handler, 1, 0, 1, 1)
 }
 
+func TestReturningLoanMakesSkiAvailableForAllViews(t *testing.T) {
+	server := newServer()
+	ski := postJSON(t, server.Handler, "/api/skis", `{"brand":"Atomic","model":"Redster"}`, http.StatusCreated)
+	person := postJSON(t, server.Handler, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","photo":{"content_type":"image/png"}}`, http.StatusCreated)
+	skiID := stringField(t, ski, "ID")
+	personID := stringField(t, person, "ID")
+
+	postJSON(t, server.Handler, "/api/loans", `{"ski_id":"`+skiID+`","person_id":"`+personID+`"}`, http.StatusCreated)
+	request(t, server.Handler, http.MethodDelete, "/api/loans/"+skiID, "", http.StatusNoContent)
+
+	skis := request(t, server.Handler, http.MethodGet, "/api/skis", "", http.StatusOK)
+	var skiList []struct {
+		ID     string
+		Status string
+	}
+	decodeResponse(t, skis, &skiList)
+	if len(skiList) != 1 || skiList[0].ID != skiID || skiList[0].Status != "verfügbar" {
+		t.Fatalf("unexpected skis after return: %#v", skiList)
+	}
+
+	loans := request(t, server.Handler, http.MethodGet, "/api/loans", "", http.StatusOK)
+	var loanList []struct {
+		SkiID   string
+		EndedAt *string
+	}
+	decodeResponse(t, loans, &loanList)
+	if len(loanList) != 1 || loanList[0].SkiID != skiID || loanList[0].EndedAt == nil {
+		t.Fatalf("unexpected loans after return: %#v", loanList)
+	}
+}
+
 func TestServerReservationLifecycle(t *testing.T) {
 	server := newServer()
 	firstSki := postJSON(t, server.Handler, "/api/skis", `{"brand":"Atomic","model":"Redster"}`, http.StatusCreated)

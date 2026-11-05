@@ -47,6 +47,9 @@ Beim Start einer Ausleihe werden alle verfügbaren Ski in einem Auswahl-Pop-up
 mit Checkboxen angezeigt. Es können ein oder mehrere Ski ausgewählt werden;
 für jeden ausgewählten Ski wird eine eigene Ausleihe für die angegebene Person
 gestartet. Die Auswahl steht im Dashboard und im Personen-Tab zur Verfügung.
+Für jede aktive Ausleihe wird zusätzlich im Personen-Tab der Button
+„Ausleihe beenden“ angezeigt. Nach der Bestätigung werden Personen-, Ski- und
+Dashboard-Ansicht automatisch aktualisiert.
 
 ## API-Kurzreferenz
 

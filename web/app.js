@@ -35,14 +35,18 @@ function render() {
   }));
   renderTable("#people-table", ["Person-ID", "Name", "Ausweis-Nummer", "Ausgeliehene Ski", "Aktion"], state.people.map(person => {
     const id = field(person, "id");
-    const rented = state.loans.filter(loan => field(loan, "personID") === id).map(loan => field(loan, "skiID")).join(", ");
+    const activeLoans = state.loans.filter(loan => field(loan, "personID") === id && !field(loan, "endedAt"));
+    const rented = activeLoans.map(loan => field(loan, "skiID")).join(", ");
+    const returnActions = activeLoans.map(loan =>
+      `<button data-return="${field(loan, "skiID")}">Ausleihe beenden</button>`).join(" ");
     const reservation = state.reservations.find(item =>
       field(item, "personID") === id && field(item, "status") === "aktiv");
-    const action = reservation
+    const reservationActions = reservation
       ? `<button data-convert="${field(reservation, "id")}">Miete reservierter Ski beginnen</button>
          <button data-edit-reservation="${field(reservation, "id")}">Reservierung bearbeiten</button>
          <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
+    const action = `${returnActions} ${reservationActions}`;
     return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, field(person, "identification"), rented || "-", action];
   }));
   renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Ski-ID", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
