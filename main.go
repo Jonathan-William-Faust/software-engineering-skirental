@@ -25,6 +25,7 @@ func newServer() *http.Server {
 	mux.HandleFunc("/healthz", healthHandler)
 	api := handler.NewAPI(store.NewInMemoryStore())
 	mux.Handle("/api/", api.Handler())
+	mux.Handle("/", http.FileServer(http.Dir("web")))
 
 	return &http.Server{
 		Addr:    serverAddr,

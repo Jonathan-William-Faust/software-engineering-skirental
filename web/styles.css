@@ -1,0 +1,25 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; background: #f4f6f8; color: #17212b; }
+body { margin: 0; }
+header { background: #123b5d; color: white; padding: 1.25rem 5vw 0; }
+h1 { margin: 0 0 1rem; }
+nav { display: flex; gap: .5rem; flex-wrap: wrap; }
+button { border: 0; border-radius: .35rem; background: #1976a8; color: white; cursor: pointer; padding: .55rem .8rem; }
+button:hover, button.active { background: #0c5a83; }
+main { margin: 2rem auto; max-width: 1100px; padding: 0 1rem; }
+.view { display: none; }
+.view.active { display: block; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+.card, table { background: white; border-radius: .5rem; box-shadow: 0 1px 5px #0002; }
+.card { padding: 1rem; }
+.card strong { display: block; font-size: 2rem; }
+.actions, .section-heading { align-items: center; display: flex; gap: .75rem; justify-content: space-between; margin: 1.5rem 0; flex-wrap: wrap; }
+table { border-collapse: collapse; overflow: hidden; width: 100%; }
+th, td { padding: .7rem; text-align: left; border-bottom: 1px solid #dde3e8; }
+th { background: #e7eef3; }
+.status { border-radius: 1rem; padding: .2rem .55rem; }
+.available { background: #d7f3df; color: #145c2b; }
+.reserved { background: #fff0c2; color: #694d00; }
+.rented { background: #ffd9d9; color: #7a1717; }
+#message { min-height: 1.5rem; }
+.error { color: #a01818; }
+.empty { background: white; padding: 1rem; border-radius: .5rem; }

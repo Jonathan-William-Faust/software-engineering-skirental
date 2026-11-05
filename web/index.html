@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skiverleih</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Skiverleih</h1>
+    <nav aria-label="Hauptnavigation">
+      <button class="tab active" data-view="dashboard">Dashboard</button>
+      <button class="tab" data-view="skis">Ski-Verwaltung</button>
+      <button class="tab" data-view="people">Personen</button>
+      <button class="tab" data-view="reservations">Reservierungen</button>
+    </nav>
+  </header>
+  <main>
+    <p id="message" role="status"></p>
+    <section id="dashboard" class="view active">
+      <h2>Dashboard</h2>
+      <div id="metrics" class="cards"></div>
+      <div class="actions">
+        <button data-action="add-ski">Ski hinzufügen</button>
+        <button data-action="register-person">Person registrieren</button>
+        <button data-action="start-loan">Ausleihe starten</button>
+      </div>
+    </section>
+    <section id="skis" class="view">
+      <div class="section-heading"><h2>Ski-Verwaltung</h2><button data-action="add-ski">Ski hinzufügen</button></div>
+      <div id="ski-table"></div>
+    </section>
+    <section id="people" class="view">
+      <div class="section-heading"><h2>Personen</h2><button data-action="register-person">Neue Person registrieren</button></div>
+      <div id="people-table"></div>
+    </section>
+    <section id="reservations" class="view">
+      <div class="section-heading"><h2>Reservierungen</h2><button data-action="add-reservation">Reservierung anlegen</button></div>
+      <div id="reservation-table"></div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
