@@ -51,6 +51,7 @@ func (api *API) handleAPI(response http.ResponseWriter, request *http.Request) {
 type skiRequest struct {
 	Brand string `json:"brand"`
 	Model string `json:"model"`
+	Size  int    `json:"size"`
 }
 
 type personRequest struct {
@@ -107,7 +108,7 @@ func (api *API) skis(response http.ResponseWriter, request *http.Request) {
 		if !decodeJSON(response, request, &input) {
 			return
 		}
-		ski, err := api.store.AddSki(input.Brand, input.Model)
+		ski, err := api.store.AddSkiWithSize(input.Brand, input.Model, input.Size)
 		if err != nil {
 			writeDomainError(response, err)
 			return

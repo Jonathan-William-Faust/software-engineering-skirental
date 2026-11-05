@@ -27,10 +27,10 @@ async function refresh() {
 
 function render() {
   renderDashboard();
-  renderTable("#ski-table", ["Ski-ID", "Marke", "Modell", "Status", "Aktion"], state.skis.map(ski => {
+  renderTable("#ski-table", ["Ski-ID", "Marke", "Modell", "Größe", "Status", "Aktion"], state.skis.map(ski => {
     const id = field(ski, "id"), status = field(ski, "status");
     const action = status === "verliehen" ? `<button data-return="${id}">Leihe beenden</button>` : "";
-    return [id, field(ski, "brand"), field(ski, "model"), `<span class="status ${statusClass(status)}">${status}</span>`, action];
+    return [id, field(ski, "brand"), field(ski, "model"), field(ski, "size") || "-", `<span class="status ${statusClass(status)}">${status}</span>`, action];
   }));
   renderTable("#people-table", ["Person-ID", "Name", "Ausweis-Nummer", "Ausgeliehene Ski"], state.people.map(person => {
     const id = field(person, "id");

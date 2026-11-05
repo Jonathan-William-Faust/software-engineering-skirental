@@ -22,17 +22,25 @@ type Ski struct {
 	ID     string
 	Brand  string
 	Model  string
+	Size   int
 	Status SkiStatus
 }
 
 func NewSki(id, brand, model string) (Ski, error) {
+	return NewSkiWithSize(id, brand, model, 0)
+}
+
+func NewSkiWithSize(id, brand, model string, size int) (Ski, error) {
 	if err := ValidateSkiID(id); err != nil {
 		return Ski{}, err
 	}
 	if strings.TrimSpace(brand) == "" || strings.TrimSpace(model) == "" {
 		return Ski{}, fmt.Errorf("%w: ski brand and model are required", ErrInvalidSki)
 	}
-	return Ski{ID: id, Brand: brand, Model: model, Status: SkiAvailable}, nil
+	if size < 0 {
+		return Ski{}, fmt.Errorf("%w: ski size cannot be negative", ErrInvalidSki)
+	}
+	return Ski{ID: id, Brand: brand, Model: model, Size: size, Status: SkiAvailable}, nil
 }
 
 func (ski *Ski) Reserve() error {

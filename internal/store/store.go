@@ -10,6 +10,7 @@ import (
 
 type Store interface {
 	AddSki(brand, model string) (domain.Ski, error)
+	AddSkiWithSize(brand, model string, size int) (domain.Ski, error)
 	RegisterPerson(firstName, lastName string, birthDate time.Time, identification string, photo domain.IDPhoto) (domain.Person, error)
 	ListSkis() []domain.Ski
 	ListPeople() []domain.Person
@@ -33,13 +34,44 @@ func NewInMemoryStore() *InMemoryStore {
 }
 
 func (store *InMemoryStore) AddSki(brand, model string) (domain.Ski, error) {
+	return store.AddSkiWithSize(brand, model, 0)
+}
+
+func (store *InMemoryStore) AddSkiWithSize(brand, model string, size int) (domain.Ski, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	ski, err := store.service.AddSki(brand, model)
+	ski, err := store.service.AddSkiWithSize(brand, model, size)
 	if err != nil {
 		return domain.Ski{}, fmt.Errorf("add ski: %w", err)
 	}
 	return ski, nil
+}
+
+func (store *InMemoryStore) SeedDefaultSkis() error {
+	catalog := []struct {
+		brand string
+		model string
+	}{
+		{"Atomic", "Redster S9"},
+		{"Rossignol", "Hero Elite ST Ti"},
+		{"Head", "Supershape e-Magnum"},
+		{"Salomon", "S/Max 10"},
+		{"Fischer", "RC4 The Curv"},
+		{"Völkl", "Racetiger SL"},
+		{"Blizzard", "Firebird SRC"},
+		{"Nordica", "Dobermann Spitfire 76 RB"},
+		{"Elan", "Amphibio 14 Ti"},
+		{"K2", "Disruption 76"},
+	}
+	sizes := []int{150, 155, 160, 165, 170, 175, 180, 185, 190, 195}
+	for _, item := range catalog {
+		for _, size := range sizes {
+			if _, err := store.AddSkiWithSize(item.brand, item.model, size); err != nil {
+				return fmt.Errorf("seed default ski catalog: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
 func (store *InMemoryStore) RegisterPerson(firstName, lastName string, birthDate time.Time, identification string, photo domain.IDPhoto) (domain.Person, error) {

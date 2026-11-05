@@ -21,6 +21,35 @@ func TestEmptyStoreReturnsEmptyCollections(t *testing.T) {
 	}
 }
 
+func TestDefaultSkiCatalogContains100Skis(t *testing.T) {
+	store := NewInMemoryStore()
+	if err := store.SeedDefaultSkis(); err != nil {
+		t.Fatal(err)
+	}
+	skis := store.ListSkis()
+	if len(skis) != 100 {
+		t.Fatalf("seeded ski count = %d, want 100", len(skis))
+	}
+	models := make(map[string]map[int]bool)
+	for _, ski := range skis {
+		if ski.Size < 150 || ski.Size > 195 {
+			t.Fatalf("ski %s has unexpected size %d", ski.ID, ski.Size)
+		}
+		if models[ski.Model] == nil {
+			models[ski.Model] = make(map[int]bool)
+		}
+		models[ski.Model][ski.Size] = true
+	}
+	if len(models) != 10 {
+		t.Fatalf("seeded model count = %d, want 10", len(models))
+	}
+	for model, sizes := range models {
+		if len(sizes) != 10 {
+			t.Fatalf("model %q has %d sizes, want 10", model, len(sizes))
+		}
+	}
+}
+
 func TestStoreLifecycleAndErrors(t *testing.T) {
 	store := NewInMemoryStore()
 	ski, err := store.AddSki("Atomic", "Redster")

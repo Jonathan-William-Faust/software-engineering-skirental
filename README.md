@@ -27,6 +27,11 @@ Der Server meldet sich unter `http://localhost:8080/healthz` mit
 Personen und Reservierungen. Aktionen werden über Dialoge eingegeben und
 anschließend über die JSON-API ausgeführt.
 
+Beim Start werden automatisch 100 Ski angelegt: zehn real verfügbare Modelle
+mit jeweils zehn Größen von 150 bis 195 cm. Diese Startdaten stehen direkt in
+der Ski-Verwaltung zur Verfügung und werden bei jedem Neustart des
+In-Memory-Stores neu erzeugt.
+
 ## API-Kurzreferenz
 
 | Methode | Pfad | Zweck |

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -22,5 +23,28 @@ func TestHealthEndpoint(t *testing.T) {
 
 	if body := response.Body.String(); body != "{\"status\":\"ok\"}\n" {
 		t.Fatalf("unexpected response body: %q", body)
+	}
+}
+
+func TestSeededServerStartsWithDefaultSkiCatalog(t *testing.T) {
+	server, err := newSeededServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodGet, "/api/skis", nil)
+	response := httptest.NewRecorder()
+	server.Handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
+	}
+	var skis []struct {
+		Model string
+		Size  int
+	}
+	if err := json.NewDecoder(response.Body).Decode(&skis); err != nil {
+		t.Fatal(err)
+	}
+	if len(skis) != 100 {
+		t.Fatalf("seeded ski count = %d, want 100", len(skis))
 	}
 }

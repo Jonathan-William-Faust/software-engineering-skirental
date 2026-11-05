@@ -22,11 +22,15 @@ func NewRentalService() *RentalService {
 }
 
 func (service *RentalService) AddSki(brand, model string) (Ski, error) {
+	return service.AddSkiWithSize(brand, model, 0)
+}
+
+func (service *RentalService) AddSkiWithSize(brand, model string, size int) (Ski, error) {
 	id, err := service.ids.NewSkiID()
 	if err != nil {
 		return Ski{}, fmt.Errorf("generate ski ID: %w", err)
 	}
-	ski, err := NewSki(id, brand, model)
+	ski, err := NewSkiWithSize(id, brand, model, size)
 	if err != nil {
 		return Ski{}, fmt.Errorf("create ski: %w", err)
 	}
