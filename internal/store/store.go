@@ -12,6 +12,7 @@ type Store interface {
 	AddSki(brand, model string) (domain.Ski, error)
 	AddSkiWithSize(brand, model string, size int) (domain.Ski, error)
 	RegisterPerson(firstName, lastName string, birthDate time.Time, identification string, photo domain.IDPhoto) (domain.Person, error)
+	SeedDefaultPerson() error
 	ListSkis() []domain.Ski
 	ListPeople() []domain.Person
 	ListLoans() []domain.Loan
@@ -82,6 +83,17 @@ func (store *InMemoryStore) RegisterPerson(firstName, lastName string, birthDate
 		return domain.Person{}, fmt.Errorf("register person: %w", err)
 	}
 	return person, nil
+}
+
+func (store *InMemoryStore) SeedDefaultPerson() error {
+	birthDate, err := time.Parse("02.01.2006", "01.01.2000")
+	if err != nil {
+		return fmt.Errorf("parse default person birth date: %w", err)
+	}
+	if _, err := store.RegisterPerson("Max", "Mustermann", birthDate, "ID-MAX-MUSTERMANN", domain.IDPhoto{ContentType: "image/png"}); err != nil {
+		return fmt.Errorf("seed default person: %w", err)
+	}
+	return nil
 }
 
 func (store *InMemoryStore) ListSkis() []domain.Ski {

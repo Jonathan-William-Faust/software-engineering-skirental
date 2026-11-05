@@ -33,10 +33,17 @@ function render() {
     const action = status === "verliehen" ? `<button data-return="${id}">Leihe beenden</button>` : "";
     return [id, field(ski, "brand"), field(ski, "model"), field(ski, "size") || "-", `<span class="status ${statusClass(status)}">${status}</span>`, action];
   }));
-  renderTable("#people-table", ["Person-ID", "Name", "Ausweis-Nummer", "Ausgeliehene Ski"], state.people.map(person => {
+  renderTable("#people-table", ["Person-ID", "Name", "Ausweis-Nummer", "Ausgeliehene Ski", "Aktion"], state.people.map(person => {
     const id = field(person, "id");
     const rented = state.loans.filter(loan => field(loan, "personID") === id).map(loan => field(loan, "skiID")).join(", ");
-    return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, field(person, "identification"), rented || "-"];
+    const reservation = state.reservations.find(item =>
+      field(item, "personID") === id && field(item, "status") === "aktiv");
+    const action = reservation
+      ? `<button data-convert="${field(reservation, "id")}">Miete reservierter Ski beginnen</button>
+         <button data-edit-reservation="${field(reservation, "id")}">Reservierung bearbeiten</button>
+         <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`
+      : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
+    return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, field(person, "identification"), rented || "-", action];
   }));
   renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Ski-ID", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
     const id = field(reservation, "id");
@@ -107,6 +114,20 @@ async function startLoan() {
   await refresh();
 }
 
+async function startLoanForPerson(personID) {
+  const ski_id = prompt("Ski-ID:");
+  if (!ski_id || !confirm("Ausleihe für diese Person starten?")) return;
+  await request("/api/loans", { method: "POST", body: JSON.stringify({ ski_id, person_id: personID }) });
+  await refresh();
+}
+
+async function editReservation(id) {
+  const ski_id = prompt("Neue Ski-ID:");
+  if (!ski_id || !confirm("Reservierung bearbeiten?")) return;
+  await request(`/api/reservations/${id}`, { method: "PUT", body: JSON.stringify({ ski_id }) });
+  await refresh();
+}
+
 async function addReservation() {
   const ski_id = prompt("Ski-ID:");
   const person_id = prompt("Person-ID:");
@@ -126,11 +147,13 @@ document.addEventListener("click", async event => {
     if (event.target.dataset.action === "add-ski") await addSki();
     if (event.target.dataset.action === "register-person") await registerPerson();
     if (event.target.dataset.action === "start-loan") await startLoan();
+    if (event.target.dataset.personLoan) await startLoanForPerson(event.target.dataset.personLoan);
     if (event.target.dataset.action === "add-reservation") await addReservation();
     if (event.target.dataset.return && confirm("Ausleihe beenden?")) await request(`/api/loans/${event.target.dataset.return}`, { method: "DELETE" });
     if (event.target.dataset.convert && confirm("Reservierung in Ausleihe umwandeln?")) await request(`/api/reservations/${event.target.dataset.convert}/convert`, { method: "POST" });
+    if (event.target.dataset.editReservation) await editReservation(event.target.dataset.editReservation);
     if (event.target.dataset.discard && confirm("Reservierung verwerfen?")) await request(`/api/reservations/${event.target.dataset.discard}`, { method: "DELETE" });
-    if (event.target.dataset.return || event.target.dataset.convert || event.target.dataset.discard) await refresh();
+    if (event.target.dataset.return || event.target.dataset.convert || event.target.dataset.editReservation || event.target.dataset.discard) await refresh();
   } catch (error) { message(error.message, true); }
 });
 

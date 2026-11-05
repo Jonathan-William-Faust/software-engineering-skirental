@@ -36,6 +36,13 @@ mit jeweils zehn Größen von 150 bis 195 cm. Diese Startdaten stehen direkt in
 der Ski-Verwaltung zur Verfügung und werden bei jedem Neustart des
 In-Memory-Stores neu erzeugt.
 
+Zusätzlich wird die Standardperson Max Mustermann mit dem Geburtsdatum
+`01.01.2000` angelegt. In der Ski-Verwaltung erscheint für verliehene Ski in
+der Spalte „Aktion“ der Button „Leihe beenden“. Im Personen-Tab stehen je nach
+Zustand die Buttons „Neue Ausleihe“ oder „Miete reservierter Ski beginnen“,
+„Reservierung bearbeiten“ und „Reservierung löschen“ zur Verfügung. Jede Aktion
+öffnet ein Bestätigungs- oder Eingabe-Pop-up.
+
 ## API-Kurzreferenz
 
 | Methode | Pfad | Zweck |

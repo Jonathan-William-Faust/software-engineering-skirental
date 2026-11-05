@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -46,5 +47,34 @@ func TestSeededServerStartsWithDefaultSkiCatalog(t *testing.T) {
 	}
 	if len(skis) != 100 {
 		t.Fatalf("seeded ski count = %d, want 100", len(skis))
+	}
+}
+
+func TestSeededServerStartsWithDefaultPerson(t *testing.T) {
+	server, err := newSeededServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodGet, "/api/people", nil)
+	response := httptest.NewRecorder()
+	server.Handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
+	}
+	var people []struct {
+		ID        string
+		FirstName string
+		LastName  string
+		BirthDate string
+	}
+	if err := json.NewDecoder(response.Body).Decode(&people); err != nil {
+		t.Fatal(err)
+	}
+	if len(people) != 1 || people[0].ID != "P-0001" ||
+		people[0].FirstName != "Max" || people[0].LastName != "Mustermann" {
+		t.Fatalf("unexpected seeded people: %#v", people)
+	}
+	if !strings.HasPrefix(people[0].BirthDate, "2000-01-01") {
+		t.Fatalf("unexpected default birth date: %q", people[0].BirthDate)
 	}
 }

@@ -32,6 +32,9 @@ func newSeededServer() (*http.Server, error) {
 	if err := rentalStore.SeedDefaultSkis(); err != nil {
 		return nil, err
 	}
+	if err := rentalStore.SeedDefaultPerson(); err != nil {
+		return nil, err
+	}
 	return newServerWithStore(rentalStore), nil
 }
 

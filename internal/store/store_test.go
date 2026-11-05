@@ -55,6 +55,24 @@ func TestDefaultSkiCatalogContains100Skis(t *testing.T) {
 	}
 }
 
+func TestDefaultPerson(t *testing.T) {
+	store := NewInMemoryStore()
+	if err := store.SeedDefaultPerson(); err != nil {
+		t.Fatal(err)
+	}
+	people := store.ListPeople()
+	if len(people) != 1 {
+		t.Fatalf("seeded person count = %d, want 1", len(people))
+	}
+	person := people[0]
+	if person.ID != "P-0001" || person.FirstName != "Max" || person.LastName != "Mustermann" {
+		t.Fatalf("unexpected default person: %#v", person)
+	}
+	if !person.BirthDate.Equal(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)) {
+		t.Fatalf("default birth date = %v", person.BirthDate)
+	}
+}
+
 func TestStoreLifecycleAndErrors(t *testing.T) {
 	store := NewInMemoryStore()
 	ski, err := store.AddSki("Atomic", "Redster")
