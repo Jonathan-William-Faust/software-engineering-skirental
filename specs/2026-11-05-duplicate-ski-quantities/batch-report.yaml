@@ -1,0 +1,34 @@
+feature: duplicate-ski-quantities
+branch: feature/2026-11-05-duplicate-ski-quantities
+status: passed
+criteria:
+  - id: duplicate-catalog
+    status: passed
+    evidence: SeedDefaultSkis creates 200 skis, with two distinct IDs for every model/size combination; store and seeded-server tests verify this.
+  - id: quantity-selection
+    status: passed
+    evidence: web/app.js groups available concrete skis by model and size and limits requested quantities to the available count.
+  - id: grouped-person-actions
+    status: passed
+    evidence: The person table renders one convert, edit, and discard action per person and handlers process all active reservations.
+  - id: checkbox-editing
+    status: passed
+    evidence: Reservation editing displays existing reservations and available skis as checkbox lists; retained periods are preserved and new periods are requested.
+  - id: regression
+    status: passed
+    evidence: go test ./... and go test -race ./... passed.
+  - id: quality
+    status: passed
+    evidence: go fmt ./..., go vet ./..., and git diff --check passed.
+manual_checks:
+  - status: source-verified
+    evidence: Quantity, grouped actions, and checkbox workflows are wired through the existing event delegation.
+  - status: not-run
+    evidence: Interactive browser verification was not available in the command-only environment.
+commands:
+  - go fmt ./...
+  - go test ./...
+  - go test -race ./...
+  - go vet ./...
+  - git diff --check
+  - git diff main...HEAD --stat
