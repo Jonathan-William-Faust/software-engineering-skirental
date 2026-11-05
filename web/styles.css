@@ -1,6 +1,6 @@
 :root { color-scheme: light; font-family: system-ui, sans-serif; background: #f4f6f8; color: #17212b; }
 body { margin: 0; }
-.app-banner { display: block; height: auto; max-height: 18rem; object-fit: cover; width: 100%; }
+.app-banner { display: block; height: 3cm; max-height: 3cm; object-fit: cover; width: 100%; }
 header { background: #123b5d; color: white; padding: 1.25rem 5vw 0; }
 h1 { margin: 0 0 1rem; }
 nav { display: flex; gap: .5rem; flex-wrap: wrap; }
