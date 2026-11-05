@@ -260,58 +260,58 @@ function promptPositiveInteger(label) {
     if (/^[1-9]\d*$/.test(value.trim())) return Number(value);
     alert("Bitte geben Sie eine positive ganze Zahl ein.");
   }
+}
 
-  function promptPrice(defaultValue = "10.00") {
-    while (true) {
-      const value = prompt("Tagespreis in EUR (10,00 bis 20,00):", defaultValue);
-      if (value === null) return null;
-      const normalized = value.trim().replace(",", ".");
-      const price = Number(normalized);
-      if (Number.isFinite(price) && price >= 10 && price <= 20) return Number(price.toFixed(2));
-      alert("Der Tagespreis muss zwischen 10,00 EUR und 20,00 EUR liegen.");
-    }
+function promptPrice(defaultValue = "10.00") {
+  while (true) {
+    const value = prompt("Tagespreis in EUR (10,00 bis 20,00):", defaultValue);
+    if (value === null) return null;
+    const normalized = value.trim().replace(",", ".");
+    const price = Number(normalized);
+    if (Number.isFinite(price) && price >= 10 && price <= 20) return Number(price.toFixed(2));
+    alert("Der Tagespreis muss zwischen 10,00 EUR und 20,00 EUR liegen.");
   }
+}
 
-  function formatPrice(cents) {
-    return `${((Number(cents) || 0) / 100).toFixed(2).replace(".", ",")} EUR`;
-  }
+function formatPrice(cents) {
+  return `${((Number(cents) || 0) / 100).toFixed(2).replace(".", ",")} EUR`;
+}
 
-  function formatDate(value) {
-    if (!value) return "-";
-    return new Date(value).toLocaleDateString("de-DE");
-  }
+function formatDate(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("de-DE");
+}
 
-  function rentalDays(start, end) {
-    if (!start || !end) return 1;
-    return Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
-  }
+function rentalDays(start, end) {
+  if (!start || !end) return 1;
+  return Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
+}
 
-  function confirmRentalPrice(ski_ids, period) {
-    const days = rentalDays(period.start_date, period.end_date);
-    const total = ski_ids.reduce((sum, id) => {
-      const ski = state.skis.find(item => field(item, "id") === id);
-      return sum + days * (Number(field(ski, "dailyPriceCents")) || 0);
-    }, 0);
-    return confirm(`${days} Miettag(e), Gesamtpreis für die Auswahl: ${formatPrice(total)}. Vorgang starten?`);
-  }
+function confirmRentalPrice(ski_ids, period) {
+  const days = rentalDays(period.start_date, period.end_date);
+  const total = ski_ids.reduce((sum, id) => {
+    const ski = state.skis.find(item => field(item, "id") === id);
+    return sum + days * (Number(field(ski, "dailyPriceCents")) || 0);
+  }, 0);
+  return confirm(`${days} Miettag(e), Gesamtpreis für die Auswahl: ${formatPrice(total)}. Vorgang starten?`);
+}
 
-  function todayISO() {
-    return new Date().toISOString().slice(0, 10);
-  }
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
 
-  function promptRentalPeriod(allowFuture) {
-    const today = todayISO();
-    const start_date = prompt(`Mietbeginn (JJJJ-MM-TT, ${allowFuture ? "heute oder später" : "heute"}):`, today);
-    if (start_date === null) return null;
-    const end_date = prompt("Mietende (JJJJ-MM-TT, inklusive):", start_date);
-    if (end_date === null) return null;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date) ||
-        start_date < today || end_date < start_date || (!allowFuture && start_date !== today)) {
-      alert("Ungültiger Zeitraum. Bitte verwenden Sie gültige Daten; das Ende muss am oder nach dem Beginn liegen.");
-      return promptRentalPeriod(allowFuture);
-    }
-    return { start_date, end_date };
+function promptRentalPeriod(allowFuture) {
+  const today = todayISO();
+  const start_date = prompt(`Mietbeginn (JJJJ-MM-TT, ${allowFuture ? "heute oder später" : "heute"}):`, today);
+  if (start_date === null) return null;
+  const end_date = prompt("Mietende (JJJJ-MM-TT, inklusive):", start_date);
+  if (end_date === null) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date) ||
+      start_date < today || end_date < start_date || (!allowFuture && start_date !== today)) {
+    alert("Ungültiger Zeitraum. Bitte verwenden Sie gültige Daten; das Ende muss am oder nach dem Beginn liegen.");
+    return promptRentalPeriod(allowFuture);
   }
+  return { start_date, end_date };
 }
 
 async function registerPerson() {
