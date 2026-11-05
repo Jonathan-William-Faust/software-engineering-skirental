@@ -1,0 +1,29 @@
+metadata:
+  generated: "2026-11-05"
+  source_tasks: "specs/2026-11-05-frontend/plan.md"
+  last_updated: "2026-11-05"
+summary:
+  total_tasks: 3
+  completed_tasks: 3
+  in_progress_tasks: 0
+  pending_tasks: 0
+  completion_percentage: 100.0
+tasks:
+  - task_id: "T001"
+    description: "Create frontend shell and navigation"
+    status: "completed"
+  - task_id: "T002"
+    description: "Connect views and actions to HTTP API"
+    status: "completed"
+  - task_id: "T003"
+    description: "Validate static frontend and backend compatibility"
+    status: "completed"
+pending_tasks: []
+traceability_chain:
+  - chain_id: "TRACE-001"
+    requirement: "HTML/JavaScript frontend"
+    plan_phase: "5"
+    plan_item: "1-3"
+    tasks: ["T001", "T002", "T003"]
+    files: ["web/index.html", "web/app.js", "web/styles.css", "main.go"]
+    status: "complete"

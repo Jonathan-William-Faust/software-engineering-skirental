@@ -1,0 +1,46 @@
+batch_id: "B01"
+completed_tasks: ["T001", "T002", "T003"]
+blocked_tasks: []
+files_changed:
+  T001:
+    - file: "web/index.html"
+      change_type: "created"
+      description: "Added four-tab rental application shell."
+  T002:
+    - file: "web/app.js"
+      change_type: "created"
+      description: "Added API-backed rendering and dialog actions."
+    - file: "web/styles.css"
+      change_type: "created"
+      description: "Added compact responsive styling and status colors."
+    - file: "main.go"
+      change_type: "modified"
+      description: "Served static frontend files at the root path."
+  T003:
+    - file: "specs/2026-11-05-frontend/validation.md"
+      change_type: "modified"
+      description: "Recorded frontend acceptance criteria."
+traceability:
+  - requirement: "HTML/JavaScript frontend"
+    plan_item: "1-3"
+    task: "T001-T003"
+    files: ["web/index.html", "web/app.js", "web/styles.css", "main.go"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: MEDIUM
+    message: "Node.js is unavailable, so node --check could not run; static source inspection and backend tests were used instead."
+test_results:
+  backend:
+    command: "go test ./..."
+    passed: 10
+    failed: 0
+    skipped: 0
+    failures: []
+  diff:
+    command: "git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
