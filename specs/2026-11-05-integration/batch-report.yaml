@@ -1,0 +1,44 @@
+batch_id: "B01"
+completed_tasks: ["T001", "T002", "T003"]
+blocked_tasks: []
+files_changed:
+  T001:
+    - file: "main_integration_test.go"
+      change_type: "created"
+      description: "Added shared-server reachability and HTTP integration helpers."
+  T002:
+    - file: "main_integration_test.go"
+      change_type: "created"
+      description: "Covered registration, loan, return, reservation edit, convert, and discard flows."
+  T003:
+    - file: "main_integration_test.go"
+      change_type: "created"
+      description: "Asserted dashboard consistency after state changes."
+traceability:
+  - requirement: "Integration and business flows"
+    plan_item: "1-3"
+    task: "T001-T003"
+    files: ["main_integration_test.go"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings: []
+test_results:
+  standard:
+    command: "go test ./..."
+    passed: 12
+    failed: 0
+    skipped: 0
+    failures: []
+  race:
+    command: "go test -race ./..."
+    passed: 12
+    failed: 0
+    skipped: 0
+    failures: []
+  vet:
+    command: "go vet ./..."
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
