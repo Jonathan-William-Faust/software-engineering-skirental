@@ -105,7 +105,7 @@ function render() {
          <button data-edit-reservation="${field(reservation, "id")}">Reservierung bearbeiten</button>
          <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`).join(" ")
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
-    const reservationForPersonAction = `<button data-person-reservation="${id}">Registrierung anlegen</button>`;
+    const reservationForPersonAction = `<button data-person-reservation="${id}">Reservierung anlegen</button>`;
     const action = `${editAction} ${returnActions} ${reservationActions} ${reservationForPersonAction}`;
     return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, address, field(person, "mobileNumber"), field(person, "identification"), photoAction, rented || "-", action];
   }));
