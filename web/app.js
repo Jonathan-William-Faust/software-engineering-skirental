@@ -28,17 +28,18 @@ async function refresh() {
 
 function render() {
   renderDashboard();
-  renderTable("#ski-table", ["Ski-ID", "Marke", "Modell", "Größe", "Status", "Aktion"], state.skis.map(ski => {
+  renderTable("#ski-table", ["Ski-ID", "Marke", "Modell", "Größe", "Status", "Aktion"], sortSkis(state.skis).map(ski => {
     const id = field(ski, "id"), status = field(ski, "status");
     const action = status === "verliehen" ? `<button data-return="${id}">Leihe beenden</button>` : "";
     return [id, field(ski, "brand"), field(ski, "model"), field(ski, "size") || "-", `<span class="status ${statusClass(status)}">${status}</span>`, action];
   }));
-  renderTable("#people-table", ["Person-ID", "Name", "Ausweis-Nummer", "Ausgeliehene Ski", "Aktion"], state.people.map(person => {
+  renderTable("#people-table", ["Person-ID", "Name", "Ausweis-Nummer", "Ausgeliehene Ski", "Aktion"], [...state.people].sort(comparePeople).map(person => {
     const id = field(person, "id");
     const activeLoans = state.loans.filter(loan => field(loan, "personID") === id && !field(loan, "endedAt"));
-    const rented = activeLoans.map(loan => field(loan, "skiID")).join(", ");
-    const returnActions = activeLoans.map(loan =>
-      `<button data-return="${field(loan, "skiID")}">Ausleihe beenden</button>`).join(" ");
+    const rented = sortLoanSkis(activeLoans).map(loan => field(loan, "skiID")).join(", ");
+    const returnActions = activeLoans.length
+      ? `<button data-person-return="${id}">Ausleihe beenden</button>`
+      : "";
     const reservation = state.reservations.find(item =>
       field(item, "personID") === id && field(item, "status") === "aktiv");
     const reservationActions = reservation
@@ -54,6 +55,38 @@ function render() {
     return [id, field(reservation, "personID"), field(reservation, "skiID"),
       `<button data-convert="${id}">Miete beginnen</button> <button data-discard="${id}">Verwerfen</button>`];
   }));
+}
+
+function compareText(left, right) {
+  return String(left ?? "").localeCompare(String(right ?? ""), "de", {
+    numeric: true,
+    sensitivity: "base"
+  });
+}
+
+function compareSkis(left, right) {
+  return compareText(field(left, "brand"), field(right, "brand")) ||
+    compareText(field(left, "model"), field(right, "model")) ||
+    (Number(field(left, "size")) || 0) - (Number(field(right, "size")) || 0) ||
+    compareText(field(left, "id"), field(right, "id"));
+}
+
+function sortSkis(skis) {
+  return [...skis].sort(compareSkis);
+}
+
+function sortLoanSkis(loans) {
+  return [...loans].sort((left, right) => {
+    const leftSki = state.skis.find(ski => field(ski, "id") === field(left, "skiID")) || {};
+    const rightSki = state.skis.find(ski => field(ski, "id") === field(right, "skiID")) || {};
+    return compareSkis(leftSki, rightSki);
+  });
+}
+
+function comparePeople(left, right) {
+  return compareText(field(left, "lastName"), field(right, "lastName")) ||
+    compareText(field(left, "firstName"), field(right, "firstName")) ||
+    compareText(field(left, "id"), field(right, "id"));
 }
 
 function renderDashboard() {
@@ -126,8 +159,17 @@ async function startLoanForPerson(personID) {
   await refresh();
 }
 
+async function endLoansForPerson(personID) {
+  const ski_ids = await selectPersonLoans(personID);
+  if (!ski_ids.length) return;
+  for (const ski_id of ski_ids) {
+    await request(`/api/loans/${ski_id}`, { method: "DELETE" });
+  }
+  await refresh();
+}
+
 function selectAvailableSkis() {
-  const available = state.skis.filter(ski => field(ski, "status") === "verfügbar");
+  const available = sortSkis(state.skis.filter(ski => field(ski, "status") === "verfügbar"));
   if (!available.length) {
     alert("Es sind keine verfügbaren Ski vorhanden.");
     return Promise.resolve([]);
@@ -152,6 +194,40 @@ function selectAvailableSkis() {
     dialog.addEventListener("close", () => {
       const selected = dialog.returnValue === "confirm"
         ? [...dialog.querySelectorAll('input[name="ski"]:checked')].map(input => input.value)
+        : [];
+      dialog.remove();
+      resolve(selected);
+    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
+function selectPersonLoans(personID) {
+  const loans = sortLoanSkis(state.loans.filter(loan =>
+    field(loan, "personID") === personID && !field(loan, "endedAt")));
+  return new Promise(resolve => {
+    const dialog = document.createElement("dialog");
+    const options = loans.map(loan => {
+      const skiID = field(loan, "skiID");
+      const ski = state.skis.find(item => field(item, "id") === skiID);
+      const label = ski
+        ? `${skiID} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm)`
+        : skiID;
+      return `<label><input type="checkbox" name="loan-ski" value="${skiID}"> ${label}</label>`;
+    }).join("");
+    dialog.innerHTML = `
+      <form method="dialog">
+        <h3>Ausleihen beenden</h3>
+        <div class="ski-options">${options}</div>
+        <div class="dialog-actions">
+          <button value="cancel">Abbrechen</button>
+          <button value="confirm">Ausleihe beenden</button>
+        </div>
+      </form>`;
+    dialog.addEventListener("close", () => {
+      const selected = dialog.returnValue === "confirm"
+        ? [...dialog.querySelectorAll('input[name="loan-ski"]:checked')].map(input => input.value)
         : [];
       dialog.remove();
       resolve(selected);
@@ -194,6 +270,7 @@ document.addEventListener("click", async event => {
     if (event.target.dataset.action === "register-person") await registerPerson();
     if (event.target.dataset.action === "start-loan") await startLoan();
     if (event.target.dataset.personLoan) await startLoanForPerson(event.target.dataset.personLoan);
+    if (event.target.dataset.personReturn) await endLoansForPerson(event.target.dataset.personReturn);
     if (event.target.dataset.action === "add-reservation") await addReservation();
     if (event.target.dataset.return && confirm("Ausleihe beenden?")) await request(`/api/loans/${event.target.dataset.return}`, { method: "DELETE" });
     if (event.target.dataset.convert && confirm("Reservierung in Ausleihe umwandeln?")) await request(`/api/reservations/${event.target.dataset.convert}/convert`, { method: "POST" });

@@ -50,6 +50,12 @@ gestartet. Die Auswahl steht im Dashboard und im Personen-Tab zur Verfügung.
 Für jede aktive Ausleihe wird zusätzlich im Personen-Tab der Button
 „Ausleihe beenden“ angezeigt. Nach der Bestätigung werden Personen-, Ski- und
 Dashboard-Ansicht automatisch aktualisiert.
+Der Button öffnet ein Pop-up mit den ausgeliehenen Skiern; die zu beendenden
+Ausleihen können per Checkbox ausgewählt werden.
+
+Ski werden in der Ski-Verwaltung und in Ski-Auswahl-Pop-ups aufsteigend nach
+Marke, Modell, Länge und Ski-ID sortiert. Personen werden im Personen-Tab nach
+Nachname, Vorname und Personen-ID sortiert.
 
 ## API-Kurzreferenz
 
