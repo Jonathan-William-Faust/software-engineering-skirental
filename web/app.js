@@ -1,5 +1,6 @@
 const state = { skis: [], people: [], loans: [], reservations: [] };
-const field = (object, name) => object[name] ?? object[name[0].toUpperCase() + name.slice(1)];
+const field = (object, name) => object[name] ??
+  object[name[0].toUpperCase() + name.slice(1)] ?? object[name.toUpperCase()];
 const message = (text, error = false) => {
   const element = document.querySelector("#message");
   element.textContent = text;

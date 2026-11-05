@@ -31,7 +31,12 @@ func TestDefaultSkiCatalogContains100Skis(t *testing.T) {
 		t.Fatalf("seeded ski count = %d, want 100", len(skis))
 	}
 	models := make(map[string]map[int]bool)
+	ids := make(map[string]bool)
 	for _, ski := range skis {
+		if ski.ID == "" || ids[ski.ID] {
+			t.Fatalf("ski ID %q is missing or duplicated", ski.ID)
+		}
+		ids[ski.ID] = true
 		if ski.Size < 150 || ski.Size > 195 {
 			t.Fatalf("ski %s has unexpected size %d", ski.ID, ski.Size)
 		}
@@ -55,6 +60,9 @@ func TestStoreLifecycleAndErrors(t *testing.T) {
 	ski, err := store.AddSki("Atomic", "Redster")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if ski.ID != "S-0001" {
+		t.Fatalf("user-added ski ID = %q, want S-0001", ski.ID)
 	}
 	person, err := store.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", domain.IDPhoto{ContentType: "image/png"})
 	if err != nil {
