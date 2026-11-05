@@ -15,8 +15,8 @@ Feature aus:
 1. Spezifikation mit dem Workflow von `writing-feature-spec` erstellen.
 2. Das spezifizierte Feature im Feature-Branch implementieren.
 3. Die Kriterien aus `validation.md` reproduzierbar prüfen.
-4. Nur bei vollständig bestandener Validierung committen und nach `main`
-   mergen.
+4. Nach jedem Hauptschritt einen eigenen Commit erzeugen und erst nach
+   vollständig bestandener Validierung nach `main` mergen.
 
 Der Skill ist für dieses Repository gedacht und hält die Sprache und Struktur
 der vorhandenen Spezifikationen ein.
@@ -66,6 +66,11 @@ Führe die Arbeitsschritte des Skills
    `plan.md`, `requirements.md` und `validation.md`.
 4. Verifiziere, dass Scope, Nicht-Ziele, messbare Kriterien und Merge-Regeln
    mit Mission, Techstack und Roadmap übereinstimmen.
+5. Prüfe `git diff --check` und committe ausschließlich die
+   Spezifikationsartefakte mit einer imperativen Nachricht, zum Beispiel
+   `Write <feature> specification`. Der Commit muss den vorgeschriebenen
+   Copilot-Trailer enthalten. Ohne erfolgreichen Spezifikations-Commit darf
+   die Implementierung nicht beginnen.
 
 ### 3. Implementierung
 
@@ -81,6 +86,13 @@ Führe die Arbeitsschritte des Skills
 5. Führe die kleinsten passenden Tests während der Implementierung aus und
    behebe Fehler vollständig. Keine stillen Fallbacks oder verschluckten
    Fehler.
+6. Prüfe den Implementierungsstand mit den passenden Tests, `go fmt ./...`
+   beziehungsweise dem projektspezifischen Formatter und `git diff --check`.
+   Committe anschließend ausschließlich die Implementierung mit einer
+   imperativen Nachricht, zum Beispiel `Implement <feature>`. Dieser Commit
+   muss den vorgeschriebenen Copilot-Trailer enthalten. Bei einem
+   fehlgeschlagenen Test wird nicht committen; zuerst Ursache beheben und
+   erneut prüfen.
 
 ### 4. Validierung gegen `validation.md`
 
@@ -107,27 +119,32 @@ fachliches Akzeptanzkriterium. Prüfe außerdem:
 - Konsistenz mit README, Mission und Techstack,
 - einen sauberen Arbeitsbaum vor dem Commit.
 
-Wenn ein Kriterium fehlschlägt, erstelle keinen Commit und führe keinen Merge
-durch. Dokumentiere die Abweichung und starte nach der Korrektur die komplette
-Validierung erneut.
+Wenn ein Kriterium fehlschlägt, führe keinen Validierungs-Commit und keinen
+Merge durch. Dokumentiere die Abweichung, behebe die Ursache in einem
+separaten Korrektur-Commit und starte danach die komplette Validierung erneut.
 
 ### 5. Commit und Merge
 
-Nur wenn jedes Kriterium aus `validation.md` nachweislich erfüllt ist:
+Nur wenn jeder Hauptschritt seinen eigenen Commit besitzt und jedes Kriterium
+aus `validation.md` nachweislich erfüllt ist:
 
 1. Prüfe `git diff` und `git status` auf Vollständigkeit und fremde Änderungen.
-2. Committe alle zum Feature gehörenden Änderungen mit einer kurzen,
-   imperativen Nachricht. Verwende den vorgeschriebenen Trailer:
+2. Dokumentiere die Validierungsergebnisse in `batch-report.yaml` oder dem
+   vorgesehenen Validierungsartefakt und committe ausschließlich diese
+   Nachweise mit einer imperativen Nachricht, zum Beispiel
+   `Validate <feature>`. Verwende den vorgeschriebenen Trailer:
 
    ```text
    Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
    ```
 
-3. Wechsle auf `main` und führe ausschließlich
+3. Verifiziere, dass die drei Commits in der Reihenfolge Spezifikation,
+   Implementierung und Validierung vorhanden sind.
+4. Wechsle auf `main` und führe ausschließlich
    `git merge --ff-only feature/YYYY-MM-DD-taskname` aus.
-4. Führe auf dem resultierenden `main` erneut `go test ./...` und die für
+5. Führe auf dem resultierenden `main` erneut `go test ./...` und die für
    `validation.md` relevanten Prüfungen aus.
-5. Melde Branch, Commit, Merge-Status, Testausgaben und verbleibende
+6. Melde Branch, die drei Zwischen-Commits, Merge-Status, Testausgaben und verbleibende
    Änderungen. Bei einem nicht möglichen Fast-Forward-Merge stoppe statt einen
    automatischen Merge-Commit zu erzeugen.
 
@@ -141,4 +158,3 @@ Der Abschlussbericht enthält:
 - die ausgeführten Test-, Format- und Diffbefehle,
 - den finalen `main`-Stand und Merge-Ergebnis,
 - etwaige Warnungen oder bewusst nicht erfüllte Kriterien.
-
