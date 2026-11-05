@@ -165,6 +165,7 @@ func TestRentalPeriodsAndPrices(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	person, err := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
 	if err != nil {
 		t.Fatal(err)
@@ -192,5 +193,32 @@ func TestRentalPeriodsAndPrices(t *testing.T) {
 	}
 	if _, err := service.AddSkiWithSizeAndPrice("Head", "Supershape", 170, 999); !errors.Is(err, ErrInvalidPrice) {
 		t.Fatalf("invalid price error = %v", err)
+	}
+}
+
+func TestFutureReservationCanStartLoanToday(t *testing.T) {
+	service := NewRentalService()
+	ski, err := service.AddSki("Atomic", "Redster")
+	if err != nil {
+		t.Fatal(err)
+	}
+	person, err := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tomorrow := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, 1)
+	reservation, err := service.CreateReservationForPeriod(ski.ID, person.ID, tomorrow, tomorrow.AddDate(0, 0, 2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loan, err := service.ConvertReservation(reservation.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !loan.StartedAt.Equal(dateOnly(time.Now().UTC())) {
+		t.Fatalf("loan start = %v, want today", loan.StartedAt)
+	}
+	if loan.Days != 4 {
+		t.Fatalf("loan days = %d, want 4", loan.Days)
 	}
 }

@@ -217,14 +217,16 @@ func (service *RentalService) ConvertReservation(id string) (Loan, error) {
 		return Loan{}, fmt.Errorf("%w: %s", ErrReservationNotActive, id)
 	}
 	ski := service.skis[reservation.SkiID]
+	startDate := dateOnly(time.Now().UTC())
+	endDate := dateOnly(reservation.EndDate)
+	days, err := rentalDays(startDate, endDate)
+	if err != nil {
+		return Loan{}, fmt.Errorf("convert reservation: %w", err)
+	}
 	if err := ski.Rent(); err != nil {
 		return Loan{}, fmt.Errorf("convert reservation: %w", err)
 	}
-	days, err := rentalDays(reservation.StartedAt, reservation.EndDate)
-	if err != nil {
-		return Loan{}, err
-	}
-	loan := Loan{SkiID: reservation.SkiID, PersonID: reservation.PersonID, StartedAt: reservation.StartedAt, EndDate: reservation.EndDate, Days: days, TotalPriceCents: days * ski.DailyPriceCents}
+	loan := Loan{SkiID: reservation.SkiID, PersonID: reservation.PersonID, StartedAt: startDate, EndDate: endDate, Days: days, TotalPriceCents: days * ski.DailyPriceCents}
 	service.loans[reservation.SkiID] = loan
 	now := time.Now()
 	reservation.EndedAt = &now
