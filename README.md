@@ -161,4 +161,4 @@ Im oberen Feld sollen neue Ski-Reservierungen angemeldet werden können.
 Im unteren Feld sollen alle Personen, die eine aktive Reservierung haben, zusammen mit den reservierten Skiern aufgelistet werden. Über einen grünen Button "Miete reservierter Ski beginnen" soll die Reservierung beendet und automatisch eine Miete begonnen werden. Über einen roten Button "Reservierung verwerfen" soll eine Reservierung beendet werden ohne eine Miete zu starten. Über einen gelben Button "Reservierung bearbeiten" soll die Reservierung bearbeitet werden.
 
 # Zusätzliche Anforderungen
-Die Miete oder Reservierungen beginnen stets sofort. Die App soll keine Preise verwalten. Jeder Button soll ein Pop-Up Fenster hervorrufen. In diesem sollen (falls nötig) Informationen eingegeben werden können oder die gewählte Aktion bestätigt werden. Zur Versionierung soll ein GitHub-Repo angelegt werden.
+Jeder Button soll ein Pop-Up Fenster hervorrufen. In diesem sollen (falls nötig) Informationen eingegeben werden können oder die gewählte Aktion bestätigt werden. Zur Versionierung soll ein GitHub-Repo angelegt werden.
