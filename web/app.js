@@ -105,7 +105,8 @@ function render() {
          <button data-edit-reservation="${field(reservation, "id")}">Reservierung bearbeiten</button>
          <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`).join(" ")
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
-    const action = `${editAction} ${returnActions} ${reservationActions}`;
+    const reservationForPersonAction = `<button data-person-reservation="${id}">Registrierung anlegen</button>`;
+    const action = `${editAction} ${returnActions} ${reservationActions} ${reservationForPersonAction}`;
     return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, address, field(person, "mobileNumber"), field(person, "identification"), photoAction, rented || "-", action];
   }));
   renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Person", "Ski-ID", "Beginn", "Ende", "Preis", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
@@ -514,6 +515,10 @@ async function editReservation(id) {
 async function addReservation() {
   const person_id = await selectPersonByName();
   if (!person_id) return;
+  await addReservationForPerson(person_id);
+}
+
+async function addReservationForPerson(person_id) {
   const ski_ids = await selectAvailableSkis("Verfügbare Ski für Reservierung auswählen", "reservation-ski", "Reservierung anlegen");
   if (!ski_ids.length) return;
   const period = promptRentalPeriod(true);
@@ -589,6 +594,7 @@ document.addEventListener("click", async event => {
     if (event.target.dataset.personLoan) await startLoanForPerson(event.target.dataset.personLoan);
     if (event.target.dataset.personReturn) await endLoansForPerson(event.target.dataset.personReturn);
     if (event.target.dataset.action === "add-reservation") await addReservation();
+    if (event.target.dataset.personReservation) await addReservationForPerson(event.target.dataset.personReservation);
     if (event.target.dataset.return && confirm("Ausleihe beenden?")) await request(`/api/loans/${event.target.dataset.return}`, { method: "DELETE" });
     if (event.target.dataset.convert && confirm("Reservierung in Ausleihe umwandeln?")) await request(`/api/reservations/${event.target.dataset.convert}/convert`, { method: "POST" });
     if (event.target.dataset.editReservation) await editReservation(event.target.dataset.editReservation);
