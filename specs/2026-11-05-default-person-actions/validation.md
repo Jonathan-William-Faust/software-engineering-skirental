@@ -17,3 +17,16 @@
 6. Nach erfolgreicher Validierung werden die drei Workflow-Schritte jeweils
    separat committed: Spezifikation, Implementierung und Validierung. Danach
    wird der Feature-Stand per Fast-Forward nach `main` integriert.
+
+## Durchgeführte Nachweise
+
+- `go fmt ./...` erfolgreich.
+- `go test -race -count=1 ./internal/domain ./internal/handler ./internal/store`
+  erfolgreich.
+- `go test -count=1 .` erfolgreich.
+- `go vet ./...` erfolgreich.
+- `git diff --check` erfolgreich.
+- Eine JavaScript-Syntaxprüfung mit `node --check web/app.js` war nicht
+  möglich, da Node.js in der Umgebung nicht installiert ist. Die Änderung
+  wurde stattdessen anhand der bestehenden, unveränderten JavaScript-Struktur
+  und der statischen Aktionsverdrahtung geprüft.
