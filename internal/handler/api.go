@@ -33,6 +33,8 @@ func (api *API) handleAPI(response http.ResponseWriter, request *http.Request) {
 		api.dashboard(response, request)
 	case path == "skis":
 		api.skis(response, request)
+	case path == "skis/available":
+		api.availableSkis(response, request)
 	case path == "people":
 		api.people(response, request)
 	case strings.HasPrefix(path, "people/"):
@@ -124,6 +126,7 @@ func (api *API) skis(response http.ResponseWriter, request *http.Request) {
 		if !decodeJSON(response, request, &input) {
 			return
 		}
+
 		priceCents := 1000
 		if input.DailyPrice != 0 {
 			priceCents = int(input.DailyPrice*100 + 0.5)
@@ -137,6 +140,23 @@ func (api *API) skis(response http.ResponseWriter, request *http.Request) {
 	default:
 		writeMethodNotAllowed(response, http.MethodGet, http.MethodPost)
 	}
+}
+
+func (api *API) availableSkis(response http.ResponseWriter, request *http.Request) {
+	if !requireMethod(response, request, http.MethodGet) {
+		return
+	}
+	startDate, endDate, err := parseRentalPeriod(request.URL.Query().Get("start_date"), request.URL.Query().Get("end_date"), true)
+	if err != nil {
+		writeError(response, http.StatusBadRequest, err.Error())
+		return
+	}
+	skis, err := api.store.AvailableSkisForPeriod(startDate, endDate)
+	if err != nil {
+		writeDomainError(response, err)
+		return
+	}
+	writeJSON(response, http.StatusOK, skis)
 }
 
 func (api *API) people(response http.ResponseWriter, request *http.Request) {

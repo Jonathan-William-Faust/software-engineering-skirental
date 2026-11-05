@@ -68,6 +68,10 @@ gleichzeitig reserviert werden. Mehrere aktive Reservierungen einer Person
 werden im Personen-Tab über jeweils einen gemeinsamen Button zum Starten,
 Bearbeiten oder Löschen verwaltet. Beim Bearbeiten können bestehende
 Reservierungen abgewählt und neue verfügbare Ski per Checkbox ausgewählt werden.
+Bei einer neuen Ausleihe oder Reservierung wird der Zeitraum zuerst abgefragt.
+Danach zeigt die Auswahl ausschließlich Ski, die im gesamten inklusiven
+Zeitraum weder verliehen noch reserviert sind. Reservierungen können erst am
+gespeicherten Beginn in eine Ausleihe umgewandelt werden.
 Für Ausleihen und Reservierungen werden Nachname und Vorname abgefragt.
 Passende Personen werden anschließend in einer Radio-Auswahl angezeigt, aus
 der genau eine Person ausgewählt werden kann. Abbrechen oder keine Treffer
@@ -88,6 +92,7 @@ Nachname, Vorname und Personen-ID sortiert.
 |---|---|---|
 | `GET` | `/api/dashboard` | Kennzahlen |
 | `GET`, `POST` | `/api/skis` | Ski auflisten oder anlegen |
+| `GET` | `/api/skis/available?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD` | Ski für den vollständigen Zeitraum auflisten |
 | `GET`, `POST` | `/api/people` | Personen auflisten oder registrieren |
 | `GET`, `POST` | `/api/loans` | Ausleihen auflisten oder starten |
 | `DELETE` | `/api/loans/{skiID}` | Ausleihe beenden |

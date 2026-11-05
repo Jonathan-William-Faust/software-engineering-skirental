@@ -17,6 +17,7 @@ var (
 	ErrActiveLoanExists        = errors.New("active loan already exists")
 	ErrLoanNotFound            = errors.New("active loan not found")
 	ErrReservationNotActive    = errors.New("reservation is not active")
+	ErrReservationNotStarted   = errors.New("reservation has not started")
 	ErrInvalidRentalPeriod     = errors.New("invalid rental period")
 	ErrInvalidPrice            = errors.New("invalid ski price")
 )

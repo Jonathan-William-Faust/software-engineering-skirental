@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ func TestAPIRegistrationLoanAndDashboard(t *testing.T) {
 	var skiBody struct {
 		ID string `json:"ID"`
 	}
+
 	decode(t, ski, &skiBody)
 	person := request(t, api, http.MethodPost, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusCreated)
 	var personBody struct {
@@ -29,6 +31,26 @@ func TestAPIRegistrationLoanAndDashboard(t *testing.T) {
 	decode(t, dashboard, &counts)
 	if counts["rented_skis"] != 1 || counts["available_skis"] != 0 || counts["people"] != 1 {
 		t.Fatalf("unexpected dashboard: %#v", counts)
+	}
+}
+
+func TestAvailableSkisEndpointUsesRequestedPeriod(t *testing.T) {
+	api := NewAPI(store.NewInMemoryStore()).Handler()
+	first := request(t, api, http.MethodPost, "/api/skis", `{"brand":"Atomic","model":"First"}`, http.StatusCreated)
+	second := request(t, api, http.MethodPost, "/api/skis", `{"brand":"Head","model":"Second"}`, http.StatusCreated)
+	var firstBody, secondBody struct{ ID string }
+	decode(t, first, &firstBody)
+	decode(t, second, &secondBody)
+	person := request(t, api, http.MethodPost, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"1990-01-01T00:00:00Z","identification":"ID-1","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusCreated)
+	var personBody struct{ ID string }
+	decode(t, person, &personBody)
+	request(t, api, http.MethodPost, "/api/reservations", `{"ski_id":"`+firstBody.ID+`","person_id":"`+personBody.ID+`","start_date":"2099-01-02","end_date":"2099-01-03"}`, http.StatusCreated)
+	query := "/api/skis/available?" + url.Values{"start_date": {"2099-01-02"}, "end_date": {"2099-01-02"}}.Encode()
+	response := request(t, api, http.MethodGet, query, "", http.StatusOK)
+	var skis []struct{ ID string }
+	decode(t, response, &skis)
+	if len(skis) != 1 || skis[0].ID != secondBody.ID {
+		t.Fatalf("available skis = %#v, want only %s", skis, secondBody.ID)
 	}
 }
 

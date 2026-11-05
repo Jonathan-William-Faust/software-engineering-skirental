@@ -100,6 +100,39 @@ func (service *RentalService) StartLoanForPeriod(skiID, personID string, startDa
 	return loan, nil
 }
 
+func (service *RentalService) AvailableSkisForPeriod(startDate, endDate time.Time) ([]Ski, error) {
+	startDate = dateOnly(startDate)
+	endDate = dateOnly(endDate)
+	if _, err := rentalDays(startDate, endDate); err != nil {
+		return nil, err
+	}
+	available := make([]Ski, 0, len(service.skis))
+	for _, ski := range service.skis {
+		if ski.Status != SkiAvailable || service.skiUnavailableForPeriod(ski.ID, startDate, endDate) {
+			continue
+		}
+		available = append(available, *ski)
+	}
+	return available, nil
+}
+
+func (service *RentalService) skiUnavailableForPeriod(skiID string, startDate, endDate time.Time) bool {
+	if loan, ok := service.loans[skiID]; ok && loan.Active() {
+		return true
+	}
+	for _, reservation := range service.reservations {
+		if reservation.Active() && reservation.SkiID == skiID &&
+			periodsOverlap(startDate, endDate, dateOnly(reservation.StartedAt), dateOnly(reservation.EndDate)) {
+			return true
+		}
+	}
+	return false
+}
+
+func periodsOverlap(firstStart, firstEnd, secondStart, secondEnd time.Time) bool {
+	return !firstEnd.Before(secondStart) && !secondEnd.Before(firstStart)
+}
+
 func (service *RentalService) EndLoan(skiID string) error {
 	ski, ok := service.skis[skiID]
 	if !ok {
@@ -216,8 +249,12 @@ func (service *RentalService) ConvertReservation(id string) (Loan, error) {
 	if !reservation.Active() {
 		return Loan{}, fmt.Errorf("%w: %s", ErrReservationNotActive, id)
 	}
+	today := dateOnly(time.Now().UTC())
+	if !dateOnly(reservation.StartedAt).Equal(today) {
+		return Loan{}, fmt.Errorf("%w: conversion is only possible on the reservation start date", ErrReservationNotStarted)
+	}
 	ski := service.skis[reservation.SkiID]
-	startDate := dateOnly(time.Now().UTC())
+	startDate := today
 	endDate := dateOnly(reservation.EndDate)
 	days, err := rentalDays(startDate, endDate)
 	if err != nil {

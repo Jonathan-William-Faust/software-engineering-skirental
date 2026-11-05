@@ -196,7 +196,7 @@ func TestRentalPeriodsAndPrices(t *testing.T) {
 	}
 }
 
-func TestFutureReservationCanStartLoanToday(t *testing.T) {
+func TestFutureReservationCannotStartLoanBeforeReservationDate(t *testing.T) {
 	service := NewRentalService()
 	ski, err := service.AddSki("Atomic", "Redster")
 	if err != nil {
@@ -211,14 +211,41 @@ func TestFutureReservationCanStartLoanToday(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	loan, err := service.ConvertReservation(reservation.ID)
+	if _, err := service.ConvertReservation(reservation.ID); !errors.Is(err, ErrReservationNotStarted) {
+		t.Fatalf("future reservation conversion error = %v", err)
+	}
+}
+
+func TestAvailableSkisExcludeOverlappingAllocations(t *testing.T) {
+	service := NewRentalService()
+	occupied, err := service.AddSki("Atomic", "Occupied")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !loan.StartedAt.Equal(dateOnly(time.Now().UTC())) {
-		t.Fatalf("loan start = %v, want today", loan.StartedAt)
+	available, err := service.AddSki("Head", "Available")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if loan.Days != 4 {
-		t.Fatalf("loan days = %d, want 4", loan.Days)
+	person, err := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	today := dateOnly(time.Now().UTC())
+	if _, err := service.CreateReservationForPeriod(occupied.ID, person.ID, today.AddDate(0, 0, 2), today.AddDate(0, 0, 4)); err != nil {
+		t.Fatal(err)
+	}
+	skis, err := service.AvailableSkisForPeriod(today, today.AddDate(0, 0, 1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skis) != 1 || skis[0].ID != available.ID {
+		t.Fatalf("available skis = %#v, want only %s", skis, available.ID)
+	}
+	skis, err = service.AvailableSkisForPeriod(today.AddDate(0, 0, 2), today.AddDate(0, 0, 2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skis) != 1 || skis[0].ID != available.ID {
+		t.Fatalf("overlapping available skis = %#v, want only %s", skis, available.ID)
 	}
 }

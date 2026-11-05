@@ -29,6 +29,7 @@ type Store interface {
 	ListPeople() []domain.Person
 	ListLoans() []domain.Loan
 	ListReservations() []domain.Reservation
+	AvailableSkisForPeriod(startDate, endDate time.Time) ([]domain.Ski, error)
 	StartLoan(skiID, personID string) (domain.Loan, error)
 	StartLoanForPeriod(skiID, personID string, startDate, endDate time.Time) (domain.Loan, error)
 	EndLoan(skiID string) error
@@ -193,6 +194,16 @@ func (store *InMemoryStore) ListReservations() []domain.Reservation {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 	return store.service.Reservations()
+}
+
+func (store *InMemoryStore) AvailableSkisForPeriod(startDate, endDate time.Time) ([]domain.Ski, error) {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+	skis, err := store.service.AvailableSkisForPeriod(startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("list available skis: %w", err)
+	}
+	return skis, nil
 }
 
 func (store *InMemoryStore) StartLoan(skiID, personID string) (domain.Loan, error) {

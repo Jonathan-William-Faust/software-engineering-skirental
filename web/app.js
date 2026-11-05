@@ -108,7 +108,9 @@ function render() {
       ? `<button data-person-return="${id}">Ausleihe beenden</button>`
       : "";
     const reservationActions = activeReservations.length
-      ? `<button data-person-convert="${id}">Miete reservierter Ski beginnen</button>
+      ? `${activeReservations.every(reservation => isToday(field(reservation, "startedAt")))
+          ? `<button data-person-convert="${id}">Miete reservierter Ski beginnen</button>`
+          : `<button disabled title="Eine Umwandlung ist erst am Reservierungsbeginn möglich">Miete reservierter Ski beginnen</button>`}
          <button data-person-edit-reservation="${id}">Reservierung bearbeiten</button>
          <button data-person-discard="${id}">Reservierung löschen</button>`
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
@@ -126,7 +128,10 @@ function render() {
     const total = days * (Number(field(reservation, "dailyPriceCents")) || 0);
     return [id, field(reservation, "personID"), personName, field(reservation, "skiID"),
       formatDate(field(reservation, "startedAt")), formatDate(field(reservation, "endDate")), formatPrice(total),
-      `<button data-convert="${id}">Miete beginnen</button> <button data-discard="${id}">Verwerfen</button>`];
+      `${isToday(field(reservation, "startedAt"))
+        ? `<button data-convert="${id}">Miete beginnen</button>`
+        : `<button disabled title="Eine Umwandlung ist erst am Reservierungsbeginn möglich">Miete beginnen</button>`}
+       <button data-discard="${id}">Verwerfen</button>`];
   }));
 }
 
@@ -400,22 +405,22 @@ function promptBirthDate(defaultValue = "") {
 }
 
 async function startLoan() {
-  const person_id = await selectPersonByName();
-  if (!person_id) return;
-  const ski_ids = await selectAvailableSkis();
-  if (!ski_ids.length) return;
   const period = promptRentalPeriod(false);
   if (!period) return;
+  const ski_ids = await selectAvailableSkis(period);
+  if (!ski_ids.length) return;
+  const person_id = await selectPersonByName();
+  if (!person_id) return;
   if (!confirmRentalPrice(ski_ids, period)) return;
   await startLoans(ski_ids, person_id, period);
   await refresh();
 }
 
 async function startLoanForPerson(personID) {
-  const ski_ids = await selectAvailableSkis();
-  if (!ski_ids.length || !confirm("Ausleihe für die ausgewählten Ski starten?")) return;
   const period = promptRentalPeriod(false);
   if (!period) return;
+  const ski_ids = await selectAvailableSkis(period);
+  if (!ski_ids.length || !confirm("Ausleihe für die ausgewählten Ski starten?")) return;
   if (!confirmRentalPrice(ski_ids, period)) return;
   try {
     await startLoans(ski_ids, personID, period);
@@ -435,11 +440,12 @@ async function endLoansForPerson(personID) {
   await refresh();
 }
 
-function selectAvailableSkis(title = "Verfügbare Ski auswählen", inputName = "ski", actionLabel = "Ausleihe starten") {
-  const available = sortSkis(state.skis.filter(ski => field(ski, "status") === "verfügbar"));
+async function selectAvailableSkis(period, title = "Verfügbare Ski auswählen", inputName = "ski", actionLabel = "Ausleihe starten") {
+  const query = new URLSearchParams(period);
+  const available = sortSkis(await request(`/api/skis/available?${query}`));
   if (!available.length) {
-    alert("Es sind keine verfügbaren Ski vorhanden.");
-    return Promise.resolve([]);
+    alert("Für den gesamten Zeitraum sind keine Ski verfügbar.");
+    return [];
   }
 
   return new Promise(resolve => {
@@ -552,16 +558,24 @@ async function editReservation(id) {
 }
 
 async function addReservation() {
+  const period = promptRentalPeriod(true);
+  if (!period) return;
+  const ski_ids = await selectAvailableSkis(period, "Verfügbare Ski für Reservierung auswählen", "reservation-ski", "Reservierung anlegen");
+  if (!ski_ids.length) return;
   const person_id = await selectPersonByName();
   if (!person_id) return;
-  await addReservationForPerson(person_id);
+  await createReservations(ski_ids, person_id, period);
 }
 
 async function addReservationForPerson(person_id) {
-  const ski_ids = await selectAvailableSkis("Verfügbare Ski für Reservierung auswählen", "reservation-ski", "Reservierung anlegen");
-  if (!ski_ids.length) return;
   const period = promptRentalPeriod(true);
   if (!period) return;
+  const ski_ids = await selectAvailableSkis(period, "Verfügbare Ski für Reservierung auswählen", "reservation-ski", "Reservierung anlegen");
+  if (!ski_ids.length) return;
+  await createReservations(ski_ids, person_id, period);
+}
+
+async function createReservations(ski_ids, person_id, period) {
   for (const ski_id of ski_ids) {
     await request("/api/reservations", { method: "POST", body: JSON.stringify({ ski_id, person_id, ...period }) });
   }
@@ -589,6 +603,10 @@ async function discardReservationsForPerson(personID) {
 function activeReservationsForPerson(personID) {
   return state.reservations.filter(reservation =>
     field(reservation, "personID") === personID && field(reservation, "status") === "aktiv");
+}
+
+function isToday(value) {
+  return value && new Date(value).toISOString().slice(0, 10) === todayISO();
 }
 
 function selectReservationsForEdit(personID) {
