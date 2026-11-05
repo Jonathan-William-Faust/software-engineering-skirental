@@ -23,3 +23,8 @@ th { background: #e7eef3; }
 #message { min-height: 1.5rem; }
 .error { color: #a01818; }
 .empty { background: white; padding: 1rem; border-radius: .5rem; }
+dialog { border: 0; border-radius: .5rem; box-shadow: 0 4px 18px #0004; max-width: 32rem; width: calc(100% - 3rem); }
+dialog::backdrop { background: #0006; }
+.ski-options { display: grid; gap: .65rem; margin: 1rem 0; max-height: 20rem; overflow: auto; }
+.ski-options label { padding: .5rem; background: #f4f6f8; border-radius: .3rem; }
+.dialog-actions { display: flex; gap: .75rem; justify-content: flex-end; }

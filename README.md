@@ -43,6 +43,11 @@ Zustand die Buttons „Neue Ausleihe“ oder „Miete reservierter Ski beginnen�
 „Reservierung bearbeiten“ und „Reservierung löschen“ zur Verfügung. Jede Aktion
 öffnet ein Bestätigungs- oder Eingabe-Pop-up.
 
+Beim Start einer Ausleihe werden alle verfügbaren Ski in einem Auswahl-Pop-up
+mit Checkboxen angezeigt. Es können ein oder mehrere Ski ausgewählt werden;
+für jeden ausgewählten Ski wird eine eigene Ausleihe für die angegebene Person
+gestartet. Die Auswahl steht im Dashboard und im Personen-Tab zur Verfügung.
+
 ## API-Kurzreferenz
 
 | Methode | Pfad | Zweck |

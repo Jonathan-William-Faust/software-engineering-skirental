@@ -107,18 +107,60 @@ function promptBirthDate() {
 }
 
 async function startLoan() {
-  const ski_id = prompt("Ski-ID:");
   const person_id = prompt("Person-ID:");
-  if (!ski_id || !person_id) return;
-  await request("/api/loans", { method: "POST", body: JSON.stringify({ ski_id, person_id }) });
+  if (!person_id) return;
+  const ski_ids = await selectAvailableSkis();
+  if (!ski_ids.length) return;
+  await startLoans(ski_ids, person_id);
   await refresh();
 }
 
 async function startLoanForPerson(personID) {
-  const ski_id = prompt("Ski-ID:");
-  if (!ski_id || !confirm("Ausleihe für diese Person starten?")) return;
-  await request("/api/loans", { method: "POST", body: JSON.stringify({ ski_id, person_id: personID }) });
+  const ski_ids = await selectAvailableSkis();
+  if (!ski_ids.length || !confirm("Ausleihe für die ausgewählten Ski starten?")) return;
+  await startLoans(ski_ids, personID);
   await refresh();
+}
+
+function selectAvailableSkis() {
+  const available = state.skis.filter(ski => field(ski, "status") === "verfügbar");
+  if (!available.length) {
+    alert("Es sind keine verfügbaren Ski vorhanden.");
+    return Promise.resolve([]);
+  }
+
+  return new Promise(resolve => {
+    const dialog = document.createElement("dialog");
+    const options = available.map(ski => {
+      const id = field(ski, "id");
+      const label = `${id} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm)`;
+      return `<label><input type="checkbox" name="ski" value="${id}"> ${label}</label>`;
+    }).join("");
+    dialog.innerHTML = `
+      <form method="dialog">
+        <h3>Verfügbare Ski auswählen</h3>
+        <div class="ski-options">${options}</div>
+        <div class="dialog-actions">
+          <button value="cancel">Abbrechen</button>
+          <button value="confirm">Ausleihe starten</button>
+        </div>
+      </form>`;
+    dialog.addEventListener("close", () => {
+      const selected = dialog.returnValue === "confirm"
+        ? [...dialog.querySelectorAll('input[name="ski"]:checked')].map(input => input.value)
+        : [];
+      dialog.remove();
+      resolve(selected);
+    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
+async function startLoans(ski_ids, person_id) {
+  for (const ski_id of ski_ids) {
+    await request("/api/loans", { method: "POST", body: JSON.stringify({ ski_id, person_id }) });
+  }
 }
 
 async function editReservation(id) {
