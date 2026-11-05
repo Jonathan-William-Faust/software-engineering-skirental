@@ -1,0 +1,85 @@
+package store
+
+import (
+	"errors"
+	"sync"
+	"testing"
+	"time"
+
+	"skirental/internal/domain"
+)
+
+func TestEmptyStoreReturnsEmptyCollections(t *testing.T) {
+	store := NewInMemoryStore()
+	if store.ListSkis() == nil || store.ListPeople() == nil ||
+		store.ListLoans() == nil || store.ListReservations() == nil {
+		t.Fatal("empty store returned nil collection")
+	}
+	if len(store.ListSkis()) != 0 || len(store.ListPeople()) != 0 ||
+		len(store.ListLoans()) != 0 || len(store.ListReservations()) != 0 {
+		t.Fatal("empty store returned unexpected data")
+	}
+}
+
+func TestStoreLifecycleAndErrors(t *testing.T) {
+	store := NewInMemoryStore()
+	ski, err := store.AddSki("Atomic", "Redster")
+	if err != nil {
+		t.Fatal(err)
+	}
+	person, err := store.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", domain.IDPhoto{ContentType: "image/png"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.StartLoan("S-9999", person.ID); !errors.Is(err, domain.ErrSkiNotFound) {
+		t.Fatalf("unknown ski error = %v", err)
+	}
+	if _, err := store.StartLoan(ski.ID, person.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.StartLoan(ski.ID, person.ID); !errors.Is(err, domain.ErrSkiUnavailable) {
+		t.Fatalf("unavailable ski error = %v", err)
+	}
+	if err := store.EndLoan(ski.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EndLoan(ski.ID); !errors.Is(err, domain.ErrLoanNotFound) {
+		t.Fatalf("second return error = %v", err)
+	}
+	reservation, err := store.CreateReservation(ski.ID, person.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateReservation(ski.ID, person.ID); !errors.Is(err, domain.ErrSkiUnavailable) {
+		t.Fatalf("duplicate reservation error = %v", err)
+	}
+	if err := store.DiscardReservation(reservation.ID); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStoreSupportsConcurrentAccess(t *testing.T) {
+	store := NewInMemoryStore()
+	var writer sync.WaitGroup
+	for range 20 {
+		writer.Add(1)
+		go func() {
+			defer writer.Done()
+			_, _ = store.AddSki("Atomic", "Redster")
+		}()
+	}
+	var reader sync.WaitGroup
+	for range 20 {
+		reader.Add(1)
+		go func() {
+			defer reader.Done()
+			_ = store.ListSkis()
+			_ = store.ListPeople()
+		}()
+	}
+	writer.Wait()
+	reader.Wait()
+	if got := len(store.ListSkis()); got != 20 {
+		t.Fatalf("ski count = %d, want 20", got)
+	}
+}

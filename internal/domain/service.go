@@ -178,6 +178,38 @@ func (service *RentalService) DiscardReservation(id string) error {
 	return nil
 }
 
+func (service *RentalService) Skis() []Ski {
+	result := make([]Ski, 0, len(service.skis))
+	for _, ski := range service.skis {
+		result = append(result, *ski)
+	}
+	return result
+}
+
+func (service *RentalService) People() []Person {
+	result := make([]Person, 0, len(service.people))
+	for _, person := range service.people {
+		result = append(result, *person)
+	}
+	return result
+}
+
+func (service *RentalService) Loans() []Loan {
+	result := make([]Loan, 0, len(service.loans))
+	for _, loan := range service.loans {
+		result = append(result, loan)
+	}
+	return result
+}
+
+func (service *RentalService) Reservations() []Reservation {
+	result := make([]Reservation, 0, len(service.reservations))
+	for _, reservation := range service.reservations {
+		result = append(result, reservation)
+	}
+	return result
+}
+
 func (service *RentalService) objects(skiID, personID string) (*Ski, *Person, error) {
 	ski, ok := service.skis[skiID]
 	if !ok {
