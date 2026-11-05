@@ -28,8 +28,9 @@ Personen und Reservierungen. Aktionen werden über Dialoge eingegeben und
 anschließend über die JSON-API ausgeführt.
 
 Bei der Personenregistrierung wird das Geburtsdatum im Format `DD.MM.YYYY`
-abgefragt. Ungültige Datumsangaben werden als Pop-up gemeldet und können direkt
-erneut eingegeben werden.
+abgefragt. Ungültige, zukünftige oder zu junge Datumsangaben werden als Pop-up
+gemeldet und können direkt erneut eingegeben werden. Das Mindestalter beträgt
+18 Jahre.
 
 Beim Start werden automatisch 100 Ski angelegt: zehn real verfügbare Modelle
 mit jeweils zehn Größen von 150 bis 195 cm. Diese Startdaten stehen direkt in
@@ -47,6 +48,9 @@ Beim Start einer Ausleihe werden alle verfügbaren Ski in einem Auswahl-Pop-up
 mit Checkboxen angezeigt. Es können ein oder mehrere Ski ausgewählt werden;
 für jeden ausgewählten Ski wird eine eigene Ausleihe für die angegebene Person
 gestartet. Die Auswahl steht im Dashboard und im Personen-Tab zur Verfügung.
+Reservierungen können im Dashboard und im Reservierungs-Tab über dieselbe
+Checkbox-Auswahl angelegt werden. Pro Person können mehrere verschiedene Ski
+gleichzeitig reserviert werden.
 Für jede aktive Ausleihe wird zusätzlich im Personen-Tab der Button
 „Ausleihe beenden“ angezeigt. Nach der Bestätigung werden Personen-, Ski- und
 Dashboard-Ansicht automatisch aktualisiert.

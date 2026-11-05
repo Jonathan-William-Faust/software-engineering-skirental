@@ -147,12 +147,23 @@ func (api *API) people(response http.ResponseWriter, request *http.Request) {
 
 func parseBirthDate(value string) (time.Time, error) {
 	if birthDate, err := time.Parse("02.01.2006", value); err == nil {
-		return birthDate, nil
+		return validateBirthDate(birthDate)
 	}
 	if birthDate, err := time.Parse(time.RFC3339, value); err == nil {
-		return birthDate, nil
+		return validateBirthDate(birthDate)
 	}
 	return time.Time{}, fmt.Errorf("birth_date must use format DD.MM.YYYY")
+}
+
+func validateBirthDate(birthDate time.Time) (time.Time, error) {
+	now := time.Now().UTC()
+	if birthDate.After(now) {
+		return time.Time{}, fmt.Errorf("birth_date cannot be in the future")
+	}
+	if birthDate.AddDate(18, 0, 0).After(now) {
+		return time.Time{}, fmt.Errorf("person must be at least 18 years old")
+	}
+	return birthDate, nil
 }
 
 func (api *API) loans(response http.ResponseWriter, request *http.Request) {

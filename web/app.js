@@ -40,12 +40,12 @@ function render() {
     const returnActions = activeLoans.length
       ? `<button data-person-return="${id}">Ausleihe beenden</button>`
       : "";
-    const reservation = state.reservations.find(item =>
+    const activeReservations = state.reservations.filter(item =>
       field(item, "personID") === id && field(item, "status") === "aktiv");
-    const reservationActions = reservation
-      ? `<button data-convert="${field(reservation, "id")}">Miete reservierter Ski beginnen</button>
+    const reservationActions = activeReservations.length
+      ? activeReservations.map(reservation => `<button data-convert="${field(reservation, "id")}">Miete reservierter Ski beginnen</button>
          <button data-edit-reservation="${field(reservation, "id")}">Reservierung bearbeiten</button>
-         <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`
+         <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`).join(" ")
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
     const action = `${returnActions} ${reservationActions}`;
     return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, field(person, "identification"), rented || "-", action];
@@ -136,6 +136,18 @@ function promptBirthDate() {
       const [day, month, year] = value.split(".").map(Number);
       const date = new Date(Date.UTC(year, month - 1, day));
       if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+        const now = new Date();
+        const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+        if (date > today) {
+          alert("Das Geburtsdatum darf nicht in der Zukunft liegen.");
+          continue;
+        }
+        const eighteenthBirthday = new Date(date);
+        eighteenthBirthday.setUTCFullYear(eighteenthBirthday.getUTCFullYear() + 18);
+        if (eighteenthBirthday > today) {
+          alert("Die Person muss mindestens 18 Jahre alt sein.");
+          continue;
+        }
         return value;
       }
     }
@@ -168,7 +180,7 @@ async function endLoansForPerson(personID) {
   await refresh();
 }
 
-function selectAvailableSkis() {
+function selectAvailableSkis(title = "Verfügbare Ski auswählen", inputName = "ski", actionLabel = "Ausleihe starten") {
   const available = sortSkis(state.skis.filter(ski => field(ski, "status") === "verfügbar"));
   if (!available.length) {
     alert("Es sind keine verfügbaren Ski vorhanden.");
@@ -180,20 +192,20 @@ function selectAvailableSkis() {
     const options = available.map(ski => {
       const id = field(ski, "id");
       const label = `${id} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm)`;
-      return `<label><input type="checkbox" name="ski" value="${id}"> ${label}</label>`;
+      return `<label><input type="checkbox" name="${inputName}" value="${id}"> ${label}</label>`;
     }).join("");
     dialog.innerHTML = `
       <form method="dialog">
-        <h3>Verfügbare Ski auswählen</h3>
+        <h3>${title}</h3>
         <div class="ski-options">${options}</div>
         <div class="dialog-actions">
           <button value="cancel">Abbrechen</button>
-          <button value="confirm">Ausleihe starten</button>
+          <button value="confirm">${actionLabel}</button>
         </div>
       </form>`;
     dialog.addEventListener("close", () => {
       const selected = dialog.returnValue === "confirm"
-        ? [...dialog.querySelectorAll('input[name="ski"]:checked')].map(input => input.value)
+        ? [...dialog.querySelectorAll(`input[name="${inputName}"]:checked`)].map(input => input.value)
         : [];
       dialog.remove();
       resolve(selected);
@@ -251,10 +263,13 @@ async function editReservation(id) {
 }
 
 async function addReservation() {
-  const ski_id = prompt("Ski-ID:");
   const person_id = prompt("Person-ID:");
-  if (!ski_id || !person_id) return;
-  await request("/api/reservations", { method: "POST", body: JSON.stringify({ ski_id, person_id }) });
+  if (!person_id) return;
+  const ski_ids = await selectAvailableSkis("Verfügbare Ski für Reservierung auswählen", "reservation-ski", "Reservierung anlegen");
+  if (!ski_ids.length) return;
+  for (const ski_id of ski_ids) {
+    await request("/api/reservations", { method: "POST", body: JSON.stringify({ ski_id, person_id }) });
+  }
   await refresh();
 }
 

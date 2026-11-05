@@ -97,6 +97,16 @@ func TestReservationTransitionsAndConflicts(t *testing.T) {
 	if _, err := service.CreateReservation(ski.ID, person.ID); !errors.Is(err, ErrSkiUnavailable) && !errors.Is(err, ErrDuplicateReservation) {
 		t.Fatalf("duplicate reservation error = %v", err)
 	}
+	secondReservation, err := service.CreateReservation(otherSki.ID, person.ID)
+	if err != nil {
+		t.Fatalf("second reservation for same person: %v", err)
+	}
+	if secondReservation.PersonID != person.ID {
+		t.Fatalf("second reservation person = %q, want %q", secondReservation.PersonID, person.ID)
+	}
+	if err := service.DiscardReservation(secondReservation.ID); err != nil {
+		t.Fatal(err)
+	}
 	edited, err := service.EditReservation(reservation.ID, otherSki.ID)
 	if err != nil {
 		t.Fatal(err)

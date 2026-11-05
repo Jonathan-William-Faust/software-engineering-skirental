@@ -97,8 +97,8 @@ func (service *RentalService) CreateReservation(skiID, personID string) (Reserva
 		return Reservation{}, fmt.Errorf("%w: %s", ErrSkiUnavailable, skiID)
 	}
 	for _, reservation := range service.reservations {
-		if reservation.Active() && (reservation.SkiID == ski.ID || reservation.PersonID == person.ID) {
-			return Reservation{}, fmt.Errorf("%w: ski %s or person %s", ErrDuplicateReservation, skiID, personID)
+		if reservation.Active() && reservation.SkiID == ski.ID {
+			return Reservation{}, fmt.Errorf("%w: ski %s", ErrDuplicateReservation, skiID)
 		}
 	}
 	if err := ski.Reserve(); err != nil {
