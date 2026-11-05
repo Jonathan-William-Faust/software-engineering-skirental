@@ -43,14 +43,6 @@ func newServerWithStore(rentalStore store.Store) *http.Server {
 	mux.HandleFunc("/healthz", healthHandler)
 	api := handler.NewAPI(rentalStore)
 	mux.Handle("/api/", api.Handler())
-	mux.HandleFunc("/skirental-banner.png", func(response http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodGet {
-			response.Header().Set("Allow", http.MethodGet)
-			response.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		http.ServeFile(response, request, "skirental-banner.png")
-	})
 	mux.Handle("/", http.FileServer(http.Dir("web")))
 
 	return &http.Server{
