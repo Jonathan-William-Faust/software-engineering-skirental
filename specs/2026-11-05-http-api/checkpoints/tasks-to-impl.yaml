@@ -1,0 +1,96 @@
+metadata:
+  generated: "2026-11-05"
+  source_tasks: "specs/2026-11-05-http-api/plan.md"
+  last_updated: "2026-11-05"
+
+summary:
+  total_tasks: 3
+  completed_tasks: 3
+  in_progress_tasks: 0
+  pending_tasks: 0
+  completion_percentage: 100.0
+
+tasks:
+  - task_id: "T001"
+    description: "Define HTTP resources and routing"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "internal/handler/api.go"
+          changes:
+            - change_type: "added"
+              description: "Added REST routing and JSON resource handlers."
+        - file: "main.go"
+          changes:
+            - change_type: "modified"
+              description: "Mounted the API alongside the existing health endpoint."
+    verification:
+      build_passed: true
+      test_results:
+        command: "go test ./..."
+        passed: 10
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "All API resources compile and route tests pass."
+    upstream_trace:
+      plan_item: "1"
+      requirements: ["REST resources and routing"]
+      full_trace: "Plan 1 → T001 → internal/handler/api.go and main.go"
+  - task_id: "T002"
+    description: "Implement validation and domain error mapping"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "internal/handler/api.go"
+          changes:
+            - change_type: "added"
+              description: "Added strict JSON decoding, PNG metadata validation, and 4xx mapping."
+    verification:
+      build_passed: true
+      test_results:
+        command: "go test -race ./..."
+        passed: 10
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Invalid photo, malformed resource references, and method errors are covered."
+    upstream_trace:
+      plan_item: "2"
+      requirements: ["Input validation", "Explicit HTTP errors"]
+      full_trace: "Plan 2 → T002 → internal/handler/api.go"
+  - task_id: "T003"
+    description: "Add handler and API flow tests"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "internal/handler/api_test.go"
+          changes:
+            - change_type: "added"
+              description: "Added registration, loan, dashboard, and invalid input tests."
+    verification:
+      build_passed: true
+      test_results:
+        command: "go test ./..."
+        passed: 10
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Core API flow and failure paths pass."
+    upstream_trace:
+      plan_item: "3"
+      requirements: ["API unit and integration tests"]
+      full_trace: "Plan 3 → T003 → internal/handler/api_test.go"
+
+pending_tasks: []
+traceability_chain:
+  - chain_id: "TRACE-001"
+    requirement: "HTTP API"
+    plan_phase: "4"
+    plan_item: "1-3"
+    tasks: ["T001", "T002", "T003"]
+    files:
+      - "internal/handler/api.go"
+      - "internal/handler/api_test.go"
+      - "main.go"
+    status: "complete"

@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"skirental/internal/handler"
+	"skirental/internal/store"
 )
 
 const serverAddr = ":8080"
@@ -20,6 +23,8 @@ func main() {
 func newServer() *http.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthHandler)
+	api := handler.NewAPI(store.NewInMemoryStore())
+	mux.Handle("/api/", api.Handler())
 
 	return &http.Server{
 		Addr:    serverAddr,
