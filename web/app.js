@@ -108,11 +108,15 @@ function render() {
     const action = `${editAction} ${returnActions} ${reservationActions}`;
     return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, address, field(person, "mobileNumber"), field(person, "identification"), photoAction, rented || "-", action];
   }));
-  renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Ski-ID", "Beginn", "Ende", "Preis", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
+  renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Person", "Ski-ID", "Beginn", "Ende", "Preis", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
     const id = field(reservation, "id");
+    const person = state.people.find(item => field(item, "id") === field(reservation, "personID"));
+    const personName = person
+      ? `${field(person, "firstName")} ${field(person, "lastName")}`
+      : "Unbekannte Person";
     const days = rentalDays(field(reservation, "startedAt"), field(reservation, "endDate"));
     const total = days * (Number(field(reservation, "dailyPriceCents")) || 0);
-    return [id, field(reservation, "personID"), field(reservation, "skiID"),
+    return [id, field(reservation, "personID"), personName, field(reservation, "skiID"),
       formatDate(field(reservation, "startedAt")), formatDate(field(reservation, "endDate")), formatPrice(total),
       `<button data-convert="${id}">Miete beginnen</button> <button data-discard="${id}">Verwerfen</button>`];
   }));
