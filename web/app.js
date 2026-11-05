@@ -76,12 +76,27 @@ async function addSki() {
 async function registerPerson() {
   const first_name = prompt("Vorname:");
   const last_name = prompt("Nachname:");
-  const birth_date = prompt("Geburtsdatum (ISO):");
+  const birth_date = promptBirthDate();
   const identification = prompt("Ausweis-Nummer:");
   const content_type = prompt("Foto-MIME-Typ (image/png):", "image/png");
-  if (!first_name || !last_name || !birth_date || !identification || !content_type) return;
+  if (!first_name || !last_name || birth_date === null || !identification || !content_type) return;
   await request("/api/people", { method: "POST", body: JSON.stringify({ first_name, last_name, birth_date, identification, photo: { content_type } }) });
   await refresh();
+}
+
+function promptBirthDate() {
+  while (true) {
+    const value = prompt("Geburtsdatum (DD.MM.YYYY):");
+    if (value === null) return null;
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(value)) {
+      const [day, month, year] = value.split(".").map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+        return value;
+      }
+    }
+    alert("Ungültiges Datum. Bitte verwenden Sie das Format DD.MM.YYYY, zum Beispiel 05.11.1990.");
+  }
 }
 
 async function startLoan() {

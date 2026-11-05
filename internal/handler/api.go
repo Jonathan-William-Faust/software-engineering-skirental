@@ -55,10 +55,10 @@ type skiRequest struct {
 }
 
 type personRequest struct {
-	FirstName      string    `json:"first_name"`
-	LastName       string    `json:"last_name"`
-	BirthDate      time.Time `json:"birth_date"`
-	Identification string    `json:"identification"`
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
+	BirthDate      string `json:"birth_date"`
+	Identification string `json:"identification"`
 	Photo          struct {
 		ContentType string `json:"content_type"`
 	} `json:"photo"`
@@ -128,15 +128,31 @@ func (api *API) people(response http.ResponseWriter, request *http.Request) {
 		if !decodeJSON(response, request, &input) {
 			return
 		}
-		person, err := api.store.RegisterPerson(input.FirstName, input.LastName, input.BirthDate, input.Identification, domain.IDPhoto{ContentType: input.Photo.ContentType})
+		birthDate, err := parseBirthDate(input.BirthDate)
+		if err != nil {
+			writeError(response, http.StatusBadRequest, err.Error())
+			return
+		}
+		person, err := api.store.RegisterPerson(input.FirstName, input.LastName, birthDate, input.Identification, domain.IDPhoto{ContentType: input.Photo.ContentType})
 		if err != nil {
 			writeDomainError(response, err)
 			return
 		}
+
 		writeJSON(response, http.StatusCreated, person)
 	default:
 		writeMethodNotAllowed(response, http.MethodGet, http.MethodPost)
 	}
+}
+
+func parseBirthDate(value string) (time.Time, error) {
+	if birthDate, err := time.Parse("02.01.2006", value); err == nil {
+		return birthDate, nil
+	}
+	if birthDate, err := time.Parse(time.RFC3339, value); err == nil {
+		return birthDate, nil
+	}
+	return time.Time{}, fmt.Errorf("birth_date must use format DD.MM.YYYY")
 }
 
 func (api *API) loans(response http.ResponseWriter, request *http.Request) {
