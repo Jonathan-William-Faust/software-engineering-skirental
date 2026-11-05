@@ -110,20 +110,45 @@ function renderTable(selector, headers, rows) {
 }
 
 async function addSki() {
-  const brand = prompt("Marke:");
-  const model = prompt("Modell:");
-  if (!brand || !model) return;
-  await request("/api/skis", { method: "POST", body: JSON.stringify({ brand, model }) });
+  const brand = promptRequired("Marke:");
+  if (brand === null) return;
+  const model = promptRequired("Modell:");
+  if (model === null) return;
+  const size = promptPositiveInteger("Länge (cm):");
+  if (size === null) return;
+  await request("/api/skis", { method: "POST", body: JSON.stringify({ brand, model, size }) });
   await refresh();
 }
 
+function promptRequired(label) {
+  while (true) {
+    const value = prompt(label);
+    if (value === null) return null;
+    if (value.trim()) return value.trim();
+    alert("Dieses Feld darf nicht leer sein.");
+  }
+}
+
+function promptPositiveInteger(label) {
+  while (true) {
+    const value = prompt(label);
+    if (value === null) return null;
+    if (/^[1-9]\d*$/.test(value.trim())) return Number(value);
+    alert("Bitte geben Sie eine positive ganze Zahl ein.");
+  }
+}
+
 async function registerPerson() {
-  const first_name = prompt("Vorname:");
-  const last_name = prompt("Nachname:");
+  const first_name = promptRequired("Vorname:");
+  if (first_name === null) return;
+  const last_name = promptRequired("Nachname:");
+  if (last_name === null) return;
   const birth_date = promptBirthDate();
-  const identification = prompt("Ausweis-Nummer:");
-  const content_type = prompt("Foto-MIME-Typ (image/png):", "image/png");
-  if (!first_name || !last_name || birth_date === null || !identification || !content_type) return;
+  if (birth_date === null) return;
+  const identification = promptRequired("Ausweis-Nummer:");
+  if (identification === null) return;
+  const content_type = promptRequired("Foto-MIME-Typ (image/png):");
+  if (content_type === null) return;
   await request("/api/people", { method: "POST", body: JSON.stringify({ first_name, last_name, birth_date, identification, photo: { content_type } }) });
   await refresh();
 }
@@ -156,7 +181,7 @@ function promptBirthDate() {
 }
 
 async function startLoan() {
-  const person_id = prompt("Person-ID:");
+  const person_id = await selectPersonByName();
   if (!person_id) return;
   const ski_ids = await selectAvailableSkis();
   if (!ski_ids.length) return;
@@ -256,14 +281,14 @@ async function startLoans(ski_ids, person_id) {
 }
 
 async function editReservation(id) {
-  const ski_id = prompt("Neue Ski-ID:");
-  if (!ski_id || !confirm("Reservierung bearbeiten?")) return;
+  const ski_id = promptRequired("Neue Ski-ID:");
+  if (ski_id === null || !confirm("Reservierung bearbeiten?")) return;
   await request(`/api/reservations/${id}`, { method: "PUT", body: JSON.stringify({ ski_id }) });
   await refresh();
 }
 
 async function addReservation() {
-  const person_id = prompt("Person-ID:");
+  const person_id = await selectPersonByName();
   if (!person_id) return;
   const ski_ids = await selectAvailableSkis("Verfügbare Ski für Reservierung auswählen", "reservation-ski", "Reservierung anlegen");
   if (!ski_ids.length) return;
@@ -271,6 +296,53 @@ async function addReservation() {
     await request("/api/reservations", { method: "POST", body: JSON.stringify({ ski_id, person_id }) });
   }
   await refresh();
+}
+
+async function selectPersonByName() {
+  const lastName = promptRequired("Nachname:");
+  if (lastName === null) return null;
+  const firstName = promptRequired("Vorname:");
+  if (firstName === null) return null;
+  const normalizedLastName = lastName.toLocaleLowerCase("de");
+  const normalizedFirstName = firstName.toLocaleLowerCase("de");
+  const matches = [...state.people]
+    .filter(person => field(person, "lastName").toLocaleLowerCase("de").includes(normalizedLastName) &&
+      field(person, "firstName").toLocaleLowerCase("de").includes(normalizedFirstName))
+    .sort(comparePeople);
+  if (!matches.length) {
+    alert("Keine passende Person gefunden.");
+    return null;
+  }
+  return selectOnePerson(matches);
+}
+
+function selectOnePerson(people) {
+  return new Promise(resolve => {
+    const dialog = document.createElement("dialog");
+    const options = people.map((person, index) => {
+      const id = field(person, "id");
+      const name = `${field(person, "lastName")}, ${field(person, "firstName")} (${id})`;
+      return `<label><input type="radio" name="person" value="${id}"${index === 0 ? " checked" : ""}> ${name}</label>`;
+    }).join("");
+    dialog.innerHTML = `
+      <form method="dialog">
+        <h3>Person auswählen</h3>
+        <div class="ski-options">${options}</div>
+        <div class="dialog-actions">
+          <button value="cancel">Abbrechen</button>
+          <button value="confirm">Person auswählen</button>
+        </div>
+      </form>`;
+    dialog.addEventListener("close", () => {
+      const selected = dialog.returnValue === "confirm"
+        ? dialog.querySelector('input[name="person"]:checked')?.value || null
+        : null;
+      dialog.remove();
+      resolve(selected);
+    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
 }
 
 document.addEventListener("click", async event => {

@@ -27,6 +27,10 @@ Der Server meldet sich unter `http://localhost:8080/healthz` mit
 Personen und Reservierungen. Aktionen werden über Dialoge eingegeben und
 anschließend über die JSON-API ausgeführt.
 
+Beim Hinzufügen eines Skis werden Marke, Modell und Länge in Zentimetern
+abgefragt. Leere Eingaben sind nicht zulässig; ein Abbruch beendet den
+gesamten Vorgang.
+
 Bei der Personenregistrierung wird das Geburtsdatum im Format `DD.MM.YYYY`
 abgefragt. Ungültige, zukünftige oder zu junge Datumsangaben werden als Pop-up
 gemeldet und können direkt erneut eingegeben werden. Das Mindestalter beträgt
@@ -51,6 +55,10 @@ gestartet. Die Auswahl steht im Dashboard und im Personen-Tab zur Verfügung.
 Reservierungen können im Dashboard und im Reservierungs-Tab über dieselbe
 Checkbox-Auswahl angelegt werden. Pro Person können mehrere verschiedene Ski
 gleichzeitig reserviert werden.
+Für Ausleihen und Reservierungen werden Nachname und Vorname abgefragt.
+Passende Personen werden anschließend in einer Radio-Auswahl angezeigt, aus
+der genau eine Person ausgewählt werden kann. Abbrechen oder keine Treffer
+beenden den Vorgang ohne weitere Eingaben.
 Für jede aktive Ausleihe wird zusätzlich im Personen-Tab der Button
 „Ausleihe beenden“ angezeigt. Nach der Bestätigung werden Personen-, Ski- und
 Dashboard-Ansicht automatisch aktualisiert.
