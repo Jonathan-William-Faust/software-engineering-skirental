@@ -25,13 +25,25 @@ function promptPostalCode(defaultValue = "") {
 
 function selectIDPhoto() {
   return new Promise(resolve => {
-    const input = document.createElement("input");
-    const cleanup = () => input.remove();
-    input.type = "file";
-    input.accept = "image/png,image/jpeg,.png,.jpg,.jpeg";
-    input.addEventListener("change", () => {
-     const file = input.files?.[0];
-     cleanup();
+    const dialog = document.createElement("dialog");
+    dialog.innerHTML = `
+      <form method="dialog">
+        <h3>Ausweisdatei auswählen</h3>
+        <label for="id-photo-file">Datei auswählen</label>
+        <input id="id-photo-file" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg">
+        <div class="dialog-actions">
+          <button value="cancel">Abbrechen</button>
+          <button value="confirm">Datei verwenden</button>
+        </div>
+      </form>`;
+    dialog.addEventListener("close", () => {
+     const file = dialog.querySelector("#id-photo-file").files?.[0];
+     const confirmed = dialog.returnValue === "confirm";
+     dialog.remove();
+     if (!confirmed) {
+       resolve(null);
+       return;
+     }
      const extension = file?.name.toLowerCase().split(".").pop();
      const contentType = file?.type.toLowerCase() ||
        (extension === "jpg" || extension === "jpeg" ? "image/jpeg" : extension === "png" ? "image/png" : "");
@@ -51,12 +63,8 @@ function selectIDPhoto() {
      }, { once: true });
      reader.readAsDataURL(file);
     }, { once: true });
-    document.body.append(input);
-    input.click();
-    input.addEventListener("cancel", () => {
-      cleanup();
-      resolve(null);
-    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
   });
 }
 
@@ -74,10 +82,10 @@ async function refresh() {
 
 function render() {
   renderDashboard();
-  renderTable("#ski-table", ["Ski-ID", "Marke", "Modell", "Größe", "Status", "Aktion"], sortSkis(state.skis).map(ski => {
+  renderTable("#ski-table", ["Ski-ID", "Marke", "Modell", "Größe", "Tagespreis", "Status", "Aktion"], sortSkis(state.skis).map(ski => {
     const id = field(ski, "id"), status = field(ski, "status");
     const action = status === "verliehen" ? `<button data-return="${id}">Leihe beenden</button>` : "";
-    return [id, field(ski, "brand"), field(ski, "model"), field(ski, "size") || "-", `<span class="status ${statusClass(status)}">${status}</span>`, action];
+    return [id, field(ski, "brand"), field(ski, "model"), field(ski, "size") || "-", formatPrice(field(ski, "dailyPriceCents")), `<span class="status ${statusClass(status)}">${status}</span>`, action];
   }));
   renderTable("#people-table", ["Person-ID", "Name", "Adresse", "Handynummer", "Ausweis-Nummer", "Ausweisdokument", "Ausgeliehene Ski", "Aktion"], [...state.people].sort(comparePeople).map(person => {
     const id = field(person, "id");
@@ -100,9 +108,12 @@ function render() {
     const action = `${editAction} ${returnActions} ${reservationActions}`;
     return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, address, field(person, "mobileNumber"), field(person, "identification"), photoAction, rented || "-", action];
   }));
-  renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Ski-ID", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
+  renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Ski-ID", "Beginn", "Ende", "Preis", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
     const id = field(reservation, "id");
+    const days = rentalDays(field(reservation, "startedAt"), field(reservation, "endDate"));
+    const total = days * (Number(field(reservation, "dailyPriceCents")) || 0);
     return [id, field(reservation, "personID"), field(reservation, "skiID"),
+      formatDate(field(reservation, "startedAt")), formatDate(field(reservation, "endDate")), formatPrice(total),
       `<button data-convert="${id}">Miete beginnen</button> <button data-discard="${id}">Verwerfen</button>`];
   }));
 }
@@ -184,7 +195,9 @@ async function addSki() {
   if (model === null) return;
   const size = promptPositiveInteger("Länge (cm):");
   if (size === null) return;
-  await request("/api/skis", { method: "POST", body: JSON.stringify({ brand, model, size }) });
+  const daily_price = promptPrice();
+  if (daily_price === null) return;
+  await request("/api/skis", { method: "POST", body: JSON.stringify({ brand, model, size, daily_price }) });
   await refresh();
 }
 
@@ -246,6 +259,58 @@ function promptPositiveInteger(label) {
     if (value === null) return null;
     if (/^[1-9]\d*$/.test(value.trim())) return Number(value);
     alert("Bitte geben Sie eine positive ganze Zahl ein.");
+  }
+
+  function promptPrice(defaultValue = "10.00") {
+    while (true) {
+      const value = prompt("Tagespreis in EUR (10,00 bis 20,00):", defaultValue);
+      if (value === null) return null;
+      const normalized = value.trim().replace(",", ".");
+      const price = Number(normalized);
+      if (Number.isFinite(price) && price >= 10 && price <= 20) return Number(price.toFixed(2));
+      alert("Der Tagespreis muss zwischen 10,00 EUR und 20,00 EUR liegen.");
+    }
+  }
+
+  function formatPrice(cents) {
+    return `${((Number(cents) || 0) / 100).toFixed(2).replace(".", ",")} EUR`;
+  }
+
+  function formatDate(value) {
+    if (!value) return "-";
+    return new Date(value).toLocaleDateString("de-DE");
+  }
+
+  function rentalDays(start, end) {
+    if (!start || !end) return 1;
+    return Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
+  }
+
+  function confirmRentalPrice(ski_ids, period) {
+    const days = rentalDays(period.start_date, period.end_date);
+    const total = ski_ids.reduce((sum, id) => {
+      const ski = state.skis.find(item => field(item, "id") === id);
+      return sum + days * (Number(field(ski, "dailyPriceCents")) || 0);
+    }, 0);
+    return confirm(`${days} Miettag(e), Gesamtpreis für die Auswahl: ${formatPrice(total)}. Vorgang starten?`);
+  }
+
+  function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function promptRentalPeriod(allowFuture) {
+    const today = todayISO();
+    const start_date = prompt(`Mietbeginn (JJJJ-MM-TT, ${allowFuture ? "heute oder später" : "heute"}):`, today);
+    if (start_date === null) return null;
+    const end_date = prompt("Mietende (JJJJ-MM-TT, inklusive):", start_date);
+    if (end_date === null) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date) ||
+        start_date < today || end_date < start_date || (!allowFuture && start_date !== today)) {
+      alert("Ungültiger Zeitraum. Bitte verwenden Sie gültige Daten; das Ende muss am oder nach dem Beginn liegen.");
+      return promptRentalPeriod(allowFuture);
+    }
+    return { start_date, end_date };
   }
 }
 
@@ -327,15 +392,21 @@ async function startLoan() {
   if (!person_id) return;
   const ski_ids = await selectAvailableSkis();
   if (!ski_ids.length) return;
-  await startLoans(ski_ids, person_id);
+  const period = promptRentalPeriod(false);
+  if (!period) return;
+  if (!confirmRentalPrice(ski_ids, period)) return;
+  await startLoans(ski_ids, person_id, period);
   await refresh();
 }
 
 async function startLoanForPerson(personID) {
   const ski_ids = await selectAvailableSkis();
   if (!ski_ids.length || !confirm("Ausleihe für die ausgewählten Ski starten?")) return;
+  const period = promptRentalPeriod(false);
+  if (!period) return;
+  if (!confirmRentalPrice(ski_ids, period)) return;
   try {
-    await startLoans(ski_ids, personID);
+    await startLoans(ski_ids, personID, period);
   } catch (error) {
     alert(`Ausleihe konnte nicht gestartet werden: ${error.message}`);
     return;
@@ -363,7 +434,7 @@ function selectAvailableSkis(title = "Verfügbare Ski auswählen", inputName = "
     const dialog = document.createElement("dialog");
     const options = available.map(ski => {
       const id = field(ski, "id");
-      const label = `${id} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm)`;
+      const label = `${id} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm, ${formatPrice(field(ski, "dailyPriceCents"))}/Tag)`;
       return `<label><input type="checkbox" name="${inputName}" value="${id}"> ${label}</label>`;
     }).join("");
     dialog.innerHTML = `
@@ -421,16 +492,18 @@ function selectPersonLoans(personID) {
   });
 }
 
-async function startLoans(ski_ids, person_id) {
+async function startLoans(ski_ids, person_id, period) {
   for (const ski_id of ski_ids) {
-    await request("/api/loans", { method: "POST", body: JSON.stringify({ ski_id, person_id }) });
+    await request("/api/loans", { method: "POST", body: JSON.stringify({ ski_id, person_id, ...period }) });
   }
 }
 
 async function editReservation(id) {
   const ski_id = promptRequired("Neue Ski-ID:");
-  if (ski_id === null || !confirm("Reservierung bearbeiten?")) return;
-  await request(`/api/reservations/${id}`, { method: "PUT", body: JSON.stringify({ ski_id }) });
+  if (ski_id === null) return;
+  const period = promptRentalPeriod(true);
+  if (!period || !confirm("Reservierung bearbeiten?")) return;
+  await request(`/api/reservations/${id}`, { method: "PUT", body: JSON.stringify({ ski_id, ...period }) });
   await refresh();
 }
 
@@ -439,8 +512,10 @@ async function addReservation() {
   if (!person_id) return;
   const ski_ids = await selectAvailableSkis("Verfügbare Ski für Reservierung auswählen", "reservation-ski", "Reservierung anlegen");
   if (!ski_ids.length) return;
+  const period = promptRentalPeriod(true);
+  if (!period) return;
   for (const ski_id of ski_ids) {
-    await request("/api/reservations", { method: "POST", body: JSON.stringify({ ski_id, person_id }) });
+    await request("/api/reservations", { method: "POST", body: JSON.stringify({ ski_id, person_id, ...period }) });
   }
   await refresh();
 }

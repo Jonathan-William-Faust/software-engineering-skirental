@@ -51,9 +51,10 @@ func (api *API) handleAPI(response http.ResponseWriter, request *http.Request) {
 }
 
 type skiRequest struct {
-	Brand string `json:"brand"`
-	Model string `json:"model"`
-	Size  int    `json:"size"`
+	Brand      string  `json:"brand"`
+	Model      string  `json:"model"`
+	Size       int     `json:"size"`
+	DailyPrice float64 `json:"daily_price"`
 }
 
 type personRequest struct {
@@ -74,17 +75,23 @@ type personRequest struct {
 }
 
 type loanRequest struct {
-	SkiID    string `json:"ski_id"`
-	PersonID string `json:"person_id"`
+	SkiID     string `json:"ski_id"`
+	PersonID  string `json:"person_id"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 }
 
 type reservationRequest struct {
-	SkiID    string `json:"ski_id"`
-	PersonID string `json:"person_id"`
+	SkiID     string `json:"ski_id"`
+	PersonID  string `json:"person_id"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 }
 
 type reservationEditRequest struct {
-	SkiID string `json:"ski_id"`
+	SkiID     string `json:"ski_id"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 }
 
 func (api *API) dashboard(response http.ResponseWriter, request *http.Request) {
@@ -117,7 +124,11 @@ func (api *API) skis(response http.ResponseWriter, request *http.Request) {
 		if !decodeJSON(response, request, &input) {
 			return
 		}
-		ski, err := api.store.AddSkiWithSize(input.Brand, input.Model, input.Size)
+		priceCents := 1000
+		if input.DailyPrice != 0 {
+			priceCents = int(input.DailyPrice*100 + 0.5)
+		}
+		ski, err := api.store.AddSkiWithSizeAndPrice(input.Brand, input.Model, input.Size, priceCents)
 		if err != nil {
 			writeDomainError(response, err)
 			return
@@ -211,7 +222,12 @@ func (api *API) loans(response http.ResponseWriter, request *http.Request) {
 		if !decodeJSON(response, request, &input) {
 			return
 		}
-		loan, err := api.store.StartLoan(input.SkiID, input.PersonID)
+		startDate, endDate, err := parseRentalPeriod(input.StartDate, input.EndDate, false)
+		if err != nil {
+			writeError(response, http.StatusBadRequest, err.Error())
+			return
+		}
+		loan, err := api.store.StartLoanForPeriod(input.SkiID, input.PersonID, startDate, endDate)
 		if err != nil {
 			writeDomainError(response, err)
 			return
@@ -243,15 +259,63 @@ func (api *API) reservations(response http.ResponseWriter, request *http.Request
 		if !decodeJSON(response, request, &input) {
 			return
 		}
-		reservation, err := api.store.CreateReservation(input.SkiID, input.PersonID)
+		startDate, endDate, err := parseRentalPeriod(input.StartDate, input.EndDate, true)
+		if err != nil {
+			writeError(response, http.StatusBadRequest, err.Error())
+			return
+		}
+		reservation, err := api.store.CreateReservationForPeriod(input.SkiID, input.PersonID, startDate, endDate)
 		if err != nil {
 			writeDomainError(response, err)
 			return
 		}
+
 		writeJSON(response, http.StatusCreated, reservation)
 	default:
 		writeMethodNotAllowed(response, http.MethodGet, http.MethodPost)
 	}
+}
+
+func parseRentalPeriod(startValue, endValue string, allowFuture bool) (time.Time, time.Time, error) {
+	today := time.Now().UTC()
+	start := dateOnly(today)
+	end := start
+	var err error
+	if startValue != "" {
+		start, err = parseDate(startValue)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("start_date must use format YYYY-MM-DD")
+		}
+	}
+	if endValue != "" {
+		end, err = parseDate(endValue)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("end_date must use format YYYY-MM-DD")
+		}
+	}
+	if !allowFuture && !start.Equal(dateOnly(today)) {
+		return time.Time{}, time.Time{}, fmt.Errorf("loans must start today")
+	}
+	if start.Before(dateOnly(today)) {
+		return time.Time{}, time.Time{}, fmt.Errorf("start_date cannot be in the past")
+	}
+	if end.Before(start) {
+		return time.Time{}, time.Time{}, fmt.Errorf("end_date cannot be before start_date")
+	}
+	return start, end, nil
+}
+
+func parseDate(value string) (time.Time, error) {
+	parsed, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return parsed.UTC(), nil
+}
+
+func dateOnly(value time.Time) time.Time {
+	value = value.UTC()
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func (api *API) reservationByID(response http.ResponseWriter, request *http.Request, path string) {
@@ -279,7 +343,18 @@ func (api *API) reservationByID(response http.ResponseWriter, request *http.Requ
 		if !decodeJSON(response, request, &input) {
 			return
 		}
-		reservation, err := api.store.EditReservation(parts[0], input.SkiID)
+		var reservation domain.Reservation
+		var err error
+		if input.StartDate == "" && input.EndDate == "" {
+			reservation, err = api.store.EditReservation(parts[0], input.SkiID)
+		} else {
+			startDate, endDate, periodErr := parseRentalPeriod(input.StartDate, input.EndDate, true)
+			if periodErr != nil {
+				writeError(response, http.StatusBadRequest, periodErr.Error())
+				return
+			}
+			reservation, err = api.store.EditReservationForPeriod(parts[0], input.SkiID, startDate, endDate)
+		}
 		if err != nil {
 			writeDomainError(response, err)
 			return

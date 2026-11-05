@@ -21,7 +21,9 @@ wenigen Interaktionen abbilden.
 - Ski-IDs verwenden das Format `S-` gefolgt von vier Ziffern.
 - Personen-IDs verwenden das Format `P-` gefolgt von vier Ziffern.
 - Ein Ski hat genau einen der Status `verfügbar`, `reserviert` oder `verliehen`.
-- Ausleihen und Reservierungen beginnen stets sofort; Preise werden nicht verwaltet.
+- Ausleihen beginnen sofort und haben ein frei wählbares inklusives Enddatum.
+  Reservierungen dürfen in der Zukunft beginnen; ihr Zeitraum wird sofort
+  blockiert. Ski verwalten einen Tagespreis.
 - Aktionen werden über Pop-ups bestätigt oder mit den erforderlichen Eingaben
   durchgeführt.
 - Ein Ausweisfoto ist bei der Registrierung verpflichtend und muss im PNG-Format
@@ -30,7 +32,7 @@ wenigen Interaktionen abbilden.
 ## Nicht-Ziele
 
 - Persistente Datenhaltung mit PostgreSQL, SQLite oder einem ORM.
-- Preis-, Zahlungs- oder Abrechnungsfunktionen.
+- Zahlungs- oder Abrechnungsfunktionen.
 - Ein ausgearbeitetes Berechtigungs- oder Benutzerverwaltungssystem.
 - Eine produktionsreife Cloud-Bereitstellung.
 

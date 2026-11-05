@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"skirental/internal/store"
 )
@@ -43,6 +44,26 @@ func TestAPIAcceptsGermanBirthDateFormat(t *testing.T) {
 	api := NewAPI(store.NewInMemoryStore()).Handler()
 	request(t, api, http.MethodPost, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"05.11.1990","identification":"ID-1","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusCreated)
 	request(t, api, http.MethodPost, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"31.02.1990","identification":"ID-2","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusBadRequest)
+}
+
+func TestAPIPersistsRentalPeriodAndPrice(t *testing.T) {
+	api := NewAPI(store.NewInMemoryStore()).Handler()
+	skiResponse := request(t, api, http.MethodPost, "/api/skis", `{"brand":"Atomic","model":"Redster","size":170,"daily_price":15}`, http.StatusCreated)
+	var ski struct{ ID string }
+	decode(t, skiResponse, &ski)
+	personResponse := request(t, api, http.MethodPost, "/api/people", `{"first_name":"Ada","last_name":"Lovelace","birth_date":"05.11.1990","identification":"ID-1","country":"Deutschland","city":"Berlin","postal_code":"10115","street":"Musterstraße","house_number":"1","mobile_number":"+491234567890","photo":{"content_type":"image/png"}}`, http.StatusCreated)
+	var person struct{ ID string }
+	decode(t, personResponse, &person)
+	tomorrow := time.Now().UTC().AddDate(0, 0, 1).Format("2006-01-02")
+	reservation := request(t, api, http.MethodPost, "/api/reservations", `{"ski_id":"`+ski.ID+`","person_id":"`+person.ID+`","start_date":"`+tomorrow+`","end_date":"`+tomorrow+`"}`, http.StatusCreated)
+	var reservationBody struct {
+		StartedAt time.Time
+		EndDate   time.Time
+	}
+	decode(t, reservation, &reservationBody)
+	if reservationBody.EndDate.Before(reservationBody.StartedAt) {
+		t.Fatalf("invalid reservation period: %#v", reservationBody)
+	}
 }
 
 func TestAPIUpdatesPerson(t *testing.T) {

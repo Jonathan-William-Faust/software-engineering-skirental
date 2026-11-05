@@ -22,15 +22,19 @@ func NewRentalService() *RentalService {
 }
 
 func (service *RentalService) AddSki(brand, model string) (Ski, error) {
-	return service.AddSkiWithSize(brand, model, 0)
+	return service.AddSkiWithSizeAndPrice(brand, model, 0, 1000)
 }
 
 func (service *RentalService) AddSkiWithSize(brand, model string, size int) (Ski, error) {
+	return service.AddSkiWithSizeAndPrice(brand, model, size, 1000)
+}
+
+func (service *RentalService) AddSkiWithSizeAndPrice(brand, model string, size, dailyPriceCents int) (Ski, error) {
 	id, err := service.ids.NewSkiID()
 	if err != nil {
 		return Ski{}, fmt.Errorf("generate ski ID: %w", err)
 	}
-	ski, err := NewSkiWithSize(id, brand, model, size)
+	ski, err := NewSkiWithSizeAndPrice(id, brand, model, size, dailyPriceCents)
 	if err != nil {
 		return Ski{}, fmt.Errorf("create ski: %w", err)
 	}
@@ -64,6 +68,11 @@ func (service *RentalService) UpdatePerson(id, firstName, lastName string, birth
 }
 
 func (service *RentalService) StartLoan(skiID, personID string) (Loan, error) {
+	today := dateOnly(time.Now().UTC())
+	return service.StartLoanForPeriod(skiID, personID, today, today)
+}
+
+func (service *RentalService) StartLoanForPeriod(skiID, personID string, startDate, endDate time.Time) (Loan, error) {
 	ski, person, err := service.objects(skiID, personID)
 	if err != nil {
 		return Loan{}, err
@@ -71,13 +80,22 @@ func (service *RentalService) StartLoan(skiID, personID string) (Loan, error) {
 	if ski.Status != SkiAvailable {
 		return Loan{}, fmt.Errorf("%w: %s", ErrSkiUnavailable, skiID)
 	}
+	startDate = dateOnly(startDate)
+	endDate = dateOnly(endDate)
+	if !startDate.Equal(dateOnly(time.Now().UTC())) {
+		return Loan{}, fmt.Errorf("%w: loans must start today", ErrInvalidRentalPeriod)
+	}
+	days, err := rentalDays(startDate, endDate)
+	if err != nil {
+		return Loan{}, err
+	}
 	if existing, ok := service.loans[skiID]; ok && existing.Active() {
 		return Loan{}, fmt.Errorf("%w: %s", ErrActiveLoanExists, skiID)
 	}
 	if err := ski.Rent(); err != nil {
 		return Loan{}, fmt.Errorf("rent ski: %w", err)
 	}
-	loan := Loan{SkiID: ski.ID, PersonID: person.ID, StartedAt: time.Now()}
+	loan := Loan{SkiID: ski.ID, PersonID: person.ID, StartedAt: startDate, EndDate: endDate, Days: days, TotalPriceCents: days * ski.DailyPriceCents}
 	service.loans[ski.ID] = loan
 	return loan, nil
 }
@@ -101,12 +119,25 @@ func (service *RentalService) EndLoan(skiID string) error {
 }
 
 func (service *RentalService) CreateReservation(skiID, personID string) (Reservation, error) {
+	today := dateOnly(time.Now().UTC())
+	return service.CreateReservationForPeriod(skiID, personID, today, today)
+}
+
+func (service *RentalService) CreateReservationForPeriod(skiID, personID string, startDate, endDate time.Time) (Reservation, error) {
 	ski, person, err := service.objects(skiID, personID)
 	if err != nil {
 		return Reservation{}, err
 	}
 	if ski.Status != SkiAvailable {
 		return Reservation{}, fmt.Errorf("%w: %s", ErrSkiUnavailable, skiID)
+	}
+	startDate = dateOnly(startDate)
+	endDate = dateOnly(endDate)
+	if startDate.Before(dateOnly(time.Now().UTC())) {
+		return Reservation{}, fmt.Errorf("%w: reservation cannot start in the past", ErrInvalidRentalPeriod)
+	}
+	if _, err := rentalDays(startDate, endDate); err != nil {
+		return Reservation{}, err
 	}
 	for _, reservation := range service.reservations {
 		if reservation.Active() && reservation.SkiID == ski.ID {
@@ -119,7 +150,8 @@ func (service *RentalService) CreateReservation(skiID, personID string) (Reserva
 	service.nextReservation++
 	reservation := Reservation{
 		ID: fmt.Sprintf("R-%04d", service.nextReservation), SkiID: ski.ID,
-		PersonID: person.ID, StartedAt: time.Now(), Status: ReservationActive,
+		PersonID: person.ID, StartedAt: startDate, EndDate: endDate,
+		DailyPriceCents: ski.DailyPriceCents, Status: ReservationActive,
 	}
 	service.reservations[reservation.ID] = reservation
 	return reservation, nil
@@ -130,8 +162,24 @@ func (service *RentalService) EditReservation(id, newSkiID string) (Reservation,
 	if !ok {
 		return Reservation{}, fmt.Errorf("%w: %s", ErrReservationNotFound, id)
 	}
+	return service.EditReservationForPeriod(id, newSkiID, reservation.StartedAt, reservation.EndDate)
+}
+
+func (service *RentalService) EditReservationForPeriod(id, newSkiID string, startDate, endDate time.Time) (Reservation, error) {
+	reservation, ok := service.reservations[id]
+	if !ok {
+		return Reservation{}, fmt.Errorf("%w: %s", ErrReservationNotFound, id)
+	}
 	if !reservation.Active() {
 		return Reservation{}, fmt.Errorf("%w: %s", ErrReservationNotActive, id)
+	}
+	startDate = dateOnly(startDate)
+	endDate = dateOnly(endDate)
+	if startDate.Before(dateOnly(time.Now().UTC())) {
+		return Reservation{}, fmt.Errorf("%w: reservation cannot start in the past", ErrInvalidRentalPeriod)
+	}
+	if _, err := rentalDays(startDate, endDate); err != nil {
+		return Reservation{}, err
 	}
 	oldSki := service.skis[reservation.SkiID]
 	newSki, ok := service.skis[newSkiID]
@@ -142,6 +190,9 @@ func (service *RentalService) EditReservation(id, newSkiID string) (Reservation,
 		return Reservation{}, fmt.Errorf("%w: %s", ErrSkiUnavailable, newSkiID)
 	}
 	if newSkiID == reservation.SkiID {
+		reservation.StartedAt = startDate
+		reservation.EndDate = endDate
+		service.reservations[id] = reservation
 		return reservation, nil
 	}
 	if err := oldSki.Return(); err != nil {
@@ -151,6 +202,8 @@ func (service *RentalService) EditReservation(id, newSkiID string) (Reservation,
 		return Reservation{}, fmt.Errorf("reserve replacement ski: %w", err)
 	}
 	reservation.SkiID = newSkiID
+	reservation.StartedAt = startDate
+	reservation.EndDate = endDate
 	service.reservations[id] = reservation
 	return reservation, nil
 }
@@ -167,13 +220,29 @@ func (service *RentalService) ConvertReservation(id string) (Loan, error) {
 	if err := ski.Rent(); err != nil {
 		return Loan{}, fmt.Errorf("convert reservation: %w", err)
 	}
-	loan := Loan{SkiID: reservation.SkiID, PersonID: reservation.PersonID, StartedAt: time.Now()}
+	days, err := rentalDays(reservation.StartedAt, reservation.EndDate)
+	if err != nil {
+		return Loan{}, err
+	}
+	loan := Loan{SkiID: reservation.SkiID, PersonID: reservation.PersonID, StartedAt: reservation.StartedAt, EndDate: reservation.EndDate, Days: days, TotalPriceCents: days * ski.DailyPriceCents}
 	service.loans[reservation.SkiID] = loan
 	now := time.Now()
 	reservation.EndedAt = &now
 	reservation.Status = ReservationConverted
 	service.reservations[id] = reservation
 	return loan, nil
+}
+
+func dateOnly(value time.Time) time.Time {
+	value = value.UTC()
+	return time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func rentalDays(startDate, endDate time.Time) (int, error) {
+	if endDate.Before(startDate) {
+		return 0, fmt.Errorf("%w: end date cannot be before start date", ErrInvalidRentalPeriod)
+	}
+	return int(endDate.Sub(startDate).Hours()/24) + 1, nil
 }
 
 func (service *RentalService) DiscardReservation(id string) error {

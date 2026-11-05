@@ -19,18 +19,23 @@ func (status SkiStatus) valid() bool {
 }
 
 type Ski struct {
-	ID     string
-	Brand  string
-	Model  string
-	Size   int
-	Status SkiStatus
+	ID              string    `json:"ID"`
+	Brand           string    `json:"Brand"`
+	Model           string    `json:"Model"`
+	Size            int       `json:"Size"`
+	DailyPriceCents int       `json:"DailyPriceCents"`
+	Status          SkiStatus `json:"Status"`
 }
 
 func NewSki(id, brand, model string) (Ski, error) {
-	return NewSkiWithSize(id, brand, model, 0)
+	return NewSkiWithSizeAndPrice(id, brand, model, 0, 1000)
 }
 
 func NewSkiWithSize(id, brand, model string, size int) (Ski, error) {
+	return NewSkiWithSizeAndPrice(id, brand, model, size, 1000)
+}
+
+func NewSkiWithSizeAndPrice(id, brand, model string, size, dailyPriceCents int) (Ski, error) {
 	if err := ValidateSkiID(id); err != nil {
 		return Ski{}, err
 	}
@@ -40,7 +45,10 @@ func NewSkiWithSize(id, brand, model string, size int) (Ski, error) {
 	if size < 0 {
 		return Ski{}, fmt.Errorf("%w: ski size cannot be negative", ErrInvalidSki)
 	}
-	return Ski{ID: id, Brand: brand, Model: model, Size: size, Status: SkiAvailable}, nil
+	if dailyPriceCents < 1000 || dailyPriceCents > 2000 {
+		return Ski{}, fmt.Errorf("%w: daily price must be between 10.00 and 20.00 EUR", ErrInvalidPrice)
+	}
+	return Ski{ID: id, Brand: brand, Model: model, Size: size, DailyPriceCents: dailyPriceCents, Status: SkiAvailable}, nil
 }
 
 func (ski *Ski) Reserve() error {
@@ -142,10 +150,13 @@ func validPostalCode(value string) bool {
 }
 
 type Loan struct {
-	SkiID     string
-	PersonID  string
-	StartedAt time.Time
-	EndedAt   *time.Time
+	SkiID           string     `json:"SkiID"`
+	PersonID        string     `json:"PersonID"`
+	StartedAt       time.Time  `json:"StartedAt"`
+	EndDate         time.Time  `json:"EndDate"`
+	EndedAt         *time.Time `json:"EndedAt"`
+	Days            int        `json:"Days"`
+	TotalPriceCents int        `json:"TotalPriceCents"`
 }
 
 func (loan Loan) Active() bool {
@@ -161,12 +172,14 @@ const (
 )
 
 type Reservation struct {
-	ID        string
-	SkiID     string
-	PersonID  string
-	StartedAt time.Time
-	EndedAt   *time.Time
-	Status    ReservationStatus
+	ID              string            `json:"ID"`
+	SkiID           string            `json:"SkiID"`
+	PersonID        string            `json:"PersonID"`
+	StartedAt       time.Time         `json:"StartedAt"`
+	EndDate         time.Time         `json:"EndDate"`
+	DailyPriceCents int               `json:"DailyPriceCents"`
+	EndedAt         *time.Time        `json:"EndedAt"`
+	Status          ReservationStatus `json:"Status"`
 }
 
 func (reservation Reservation) Active() bool {

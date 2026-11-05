@@ -27,9 +27,9 @@ Der Server meldet sich unter `http://localhost:8080/healthz` mit
 Personen und Reservierungen. Aktionen werden über Dialoge eingegeben und
 anschließend über die JSON-API ausgeführt.
 
-Beim Hinzufügen eines Skis werden Marke, Modell und Länge in Zentimetern
-abgefragt. Leere Eingaben sind nicht zulässig; ein Abbruch beendet den
-gesamten Vorgang.
+Beim Hinzufügen eines Skis werden Marke, Modell, Länge in Zentimetern und ein
+Tagespreis zwischen 10,00 € und 20,00 € abgefragt. Leere oder ungültige
+Eingaben sind nicht zulässig; ein Abbruch beendet den gesamten Vorgang.
 
 Bei der Personenregistrierung werden Land und Stadt sowie die übrigen
 Adressdaten erfasst. Die Adresse wird im Personen-Tab einschließlich Stadt
@@ -58,10 +58,12 @@ Zustand die Buttons „Neue Ausleihe“ oder „Miete reservierter Ski beginnen�
 Beim Start einer Ausleihe werden alle verfügbaren Ski in einem Auswahl-Pop-up
 mit Checkboxen angezeigt. Es können ein oder mehrere Ski ausgewählt werden;
 für jeden ausgewählten Ski wird eine eigene Ausleihe für die angegebene Person
-gestartet. Die Auswahl steht im Dashboard und im Personen-Tab zur Verfügung.
-Reservierungen können im Dashboard und im Reservierungs-Tab über dieselbe
-Checkbox-Auswahl angelegt werden. Pro Person können mehrere verschiedene Ski
-gleichzeitig reserviert werden.
+gestartet. Der Ausleihbeginn ist heute; das inklusive Mietende kann gewählt
+werden. Tages- und Gesamtpreis werden angezeigt. Die Auswahl steht im
+Dashboard und im Personen-Tab zur Verfügung. Reservierungen können im
+Dashboard und im Reservierungs-Tab über dieselbe Checkbox-Auswahl mit
+zukünftigem Beginn und inklusive Mietende angelegt werden. Pro Person können
+mehrere verschiedene Ski gleichzeitig reserviert werden.
 Für Ausleihen und Reservierungen werden Nachname und Vorname abgefragt.
 Passende Personen werden anschließend in einer Radio-Auswahl angezeigt, aus
 der genau eine Person ausgewählt werden kann. Abbrechen oder keine Treffer
@@ -88,6 +90,9 @@ Nachname, Vorname und Personen-ID sortiert.
 | `GET`, `POST` | `/api/reservations` | Reservierungen auflisten oder anlegen |
 | `PUT`, `DELETE` | `/api/reservations/{id}` | Reservierung bearbeiten oder verwerfen |
 | `POST` | `/api/reservations/{id}/convert` | Reservierung in Ausleihe umwandeln |
+
+Ski liefern ihren Tagespreis in Cent. Ausleihen und Reservierungen enthalten
+Beginn und Ende; Ausleihen enthalten zusätzlich Miettage und Gesamtpreis.
 
 ## Qualität
 

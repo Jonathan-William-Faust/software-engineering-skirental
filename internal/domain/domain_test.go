@@ -158,3 +158,39 @@ func TestReservationCanBeDiscarded(t *testing.T) {
 		t.Fatal("discarded reservation did not release ski")
 	}
 }
+
+func TestRentalPeriodsAndPrices(t *testing.T) {
+	service := NewRentalService()
+	ski, err := service.AddSkiWithSizeAndPrice("Atomic", "Redster", 170, 1500)
+	if err != nil {
+		t.Fatal(err)
+	}
+	person, err := service.RegisterPerson("Ada", "Lovelace", time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC), "ID-1", "Deutschland", "Berlin", "10115", "Musterstraße", "1", "+491234567890", IDPhoto{ContentType: "image/png"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tomorrow := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, 1)
+	reservation, err := service.CreateReservationForPeriod(ski.ID, person.ID, tomorrow, tomorrow.AddDate(0, 0, 2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reservation.StartedAt.Equal(tomorrow) || reservation.EndDate.Sub(reservation.StartedAt) != 48*time.Hour {
+		t.Fatalf("unexpected reservation period: %#v", reservation)
+	}
+	if _, err := service.CreateReservationForPeriod(ski.ID, person.ID, tomorrow, tomorrow); !errors.Is(err, ErrSkiUnavailable) {
+		t.Fatalf("overlapping reservation error = %v", err)
+	}
+	if err := service.DiscardReservation(reservation.ID); err != nil {
+		t.Fatal(err)
+	}
+	loan, err := service.StartLoanForPeriod(ski.ID, person.ID, time.Now().UTC(), tomorrow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loan.Days != 2 || loan.TotalPriceCents != 3000 {
+		t.Fatalf("loan pricing = %#v, want 2 days and 3000 cents", loan)
+	}
+	if _, err := service.AddSkiWithSizeAndPrice("Head", "Supershape", 170, 999); !errors.Is(err, ErrInvalidPrice) {
+		t.Fatalf("invalid price error = %v", err)
+	}
+}

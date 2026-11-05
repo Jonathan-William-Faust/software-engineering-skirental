@@ -21,6 +21,7 @@ var mariaMusterfrauPhoto []byte
 type Store interface {
 	AddSki(brand, model string) (domain.Ski, error)
 	AddSkiWithSize(brand, model string, size int) (domain.Ski, error)
+	AddSkiWithSizeAndPrice(brand, model string, size, dailyPriceCents int) (domain.Ski, error)
 	RegisterPerson(firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo domain.IDPhoto) (domain.Person, error)
 	UpdatePerson(id, firstName, lastName string, birthDate time.Time, identification, country, city, postalCode, street, houseNumber, mobileNumber string, photo domain.IDPhoto) (domain.Person, error)
 	SeedDefaultPerson() error
@@ -29,9 +30,12 @@ type Store interface {
 	ListLoans() []domain.Loan
 	ListReservations() []domain.Reservation
 	StartLoan(skiID, personID string) (domain.Loan, error)
+	StartLoanForPeriod(skiID, personID string, startDate, endDate time.Time) (domain.Loan, error)
 	EndLoan(skiID string) error
 	CreateReservation(skiID, personID string) (domain.Reservation, error)
+	CreateReservationForPeriod(skiID, personID string, startDate, endDate time.Time) (domain.Reservation, error)
 	EditReservation(id, newSkiID string) (domain.Reservation, error)
+	EditReservationForPeriod(id, newSkiID string, startDate, endDate time.Time) (domain.Reservation, error)
 	ConvertReservation(id string) (domain.Loan, error)
 	DiscardReservation(id string) error
 }
@@ -50,9 +54,13 @@ func (store *InMemoryStore) AddSki(brand, model string) (domain.Ski, error) {
 }
 
 func (store *InMemoryStore) AddSkiWithSize(brand, model string, size int) (domain.Ski, error) {
+	return store.AddSkiWithSizeAndPrice(brand, model, size, 1000)
+}
+
+func (store *InMemoryStore) AddSkiWithSizeAndPrice(brand, model string, size, dailyPriceCents int) (domain.Ski, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	ski, err := store.service.AddSkiWithSize(brand, model, size)
+	ski, err := store.service.AddSkiWithSizeAndPrice(brand, model, size, dailyPriceCents)
 	if err != nil {
 		return domain.Ski{}, fmt.Errorf("add ski: %w", err)
 	}
@@ -76,9 +84,9 @@ func (store *InMemoryStore) SeedDefaultSkis() error {
 		{"K2", "Disruption 76"},
 	}
 	sizes := []int{150, 155, 160, 165, 170, 175, 180, 185, 190, 195}
-	for _, item := range catalog {
+	for modelIndex, item := range catalog {
 		for _, size := range sizes {
-			if _, err := store.AddSkiWithSize(item.brand, item.model, size); err != nil {
+			if _, err := store.AddSkiWithSizeAndPrice(item.brand, item.model, size, 1000+modelIndex*100); err != nil {
 				return fmt.Errorf("seed default ski catalog: %w", err)
 			}
 		}
@@ -186,9 +194,14 @@ func (store *InMemoryStore) ListReservations() []domain.Reservation {
 }
 
 func (store *InMemoryStore) StartLoan(skiID, personID string) (domain.Loan, error) {
+	today := time.Now().UTC()
+	return store.StartLoanForPeriod(skiID, personID, today, today)
+}
+
+func (store *InMemoryStore) StartLoanForPeriod(skiID, personID string, startDate, endDate time.Time) (domain.Loan, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	loan, err := store.service.StartLoan(skiID, personID)
+	loan, err := store.service.StartLoanForPeriod(skiID, personID, startDate, endDate)
 	if err != nil {
 		return domain.Loan{}, fmt.Errorf("start loan: %w", err)
 	}
@@ -205,9 +218,14 @@ func (store *InMemoryStore) EndLoan(skiID string) error {
 }
 
 func (store *InMemoryStore) CreateReservation(skiID, personID string) (domain.Reservation, error) {
+	today := time.Now().UTC()
+	return store.CreateReservationForPeriod(skiID, personID, today, today)
+}
+
+func (store *InMemoryStore) CreateReservationForPeriod(skiID, personID string, startDate, endDate time.Time) (domain.Reservation, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	reservation, err := store.service.CreateReservation(skiID, personID)
+	reservation, err := store.service.CreateReservationForPeriod(skiID, personID, startDate, endDate)
 	if err != nil {
 		return domain.Reservation{}, fmt.Errorf("create reservation: %w", err)
 	}
@@ -215,9 +233,21 @@ func (store *InMemoryStore) CreateReservation(skiID, personID string) (domain.Re
 }
 
 func (store *InMemoryStore) EditReservation(id, newSkiID string) (domain.Reservation, error) {
+	store.mu.RLock()
+	reservations := store.service.Reservations()
+	store.mu.RUnlock()
+	for _, reservation := range reservations {
+		if reservation.ID == id {
+			return store.EditReservationForPeriod(id, newSkiID, reservation.StartedAt, reservation.EndDate)
+		}
+	}
+	return store.EditReservationForPeriod(id, newSkiID, time.Now().UTC(), time.Now().UTC())
+}
+
+func (store *InMemoryStore) EditReservationForPeriod(id, newSkiID string, startDate, endDate time.Time) (domain.Reservation, error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	reservation, err := store.service.EditReservation(id, newSkiID)
+	reservation, err := store.service.EditReservationForPeriod(id, newSkiID, startDate, endDate)
 	if err != nil {
 		return domain.Reservation{}, fmt.Errorf("edit reservation: %w", err)
 	}

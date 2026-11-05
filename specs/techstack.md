@@ -43,8 +43,10 @@ hinzugefügt.
 - Statusänderungen eines Skis erfolgen nur über die Geschäftslogik.
 - Eine Ausleihe oder Reservierung darf keine inkonsistente Zuordnung von Ski und
   Person erzeugen.
-- Das Ausweisfoto wird nur als PNG akzeptiert; die Validierung erfolgt vor dem
-  Abschluss der Registrierung.
+- Mietzeiträume verwenden Datum ohne Uhrzeit und zählen Start- und Enddatum
+  inklusiv. Tagespreise werden als ganze Centbeträge gespeichert.
+- Das Ausweisfoto wird als PNG oder JPEG akzeptiert; die Validierung erfolgt vor
+  dem Abschluss der Registrierung.
 
 ## Lokale Befehle
 
