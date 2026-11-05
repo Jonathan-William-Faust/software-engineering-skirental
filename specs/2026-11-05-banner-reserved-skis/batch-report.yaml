@@ -1,0 +1,30 @@
+feature: banner-reserved-skis
+branch: feature/2026-11-05-banner-reserved-skis
+status: passed
+criteria:
+  - id: banner
+    status: passed
+    evidence: skirental-banner.png is committed, web/index.html places it above navigation, and main.go serves it at /skirental-banner.png.
+  - id: reserved-ski-column
+    status: passed
+    evidence: web/app.js adds the "Reservierte Ski" person column and lists active reservations with concrete ski details.
+  - id: period-message
+    status: passed
+    evidence: web/app.js contains the exact requested period validation message.
+  - id: regression
+    status: passed
+    evidence: go test -count=1 ./... passed.
+  - id: quality
+    status: passed
+    evidence: go fmt ./..., go vet ./..., and git diff --check passed.
+manual_checks:
+  - status: source-verified
+    evidence: Banner, person-table rendering, and validation message are wired in the existing frontend.
+  - status: not-run
+    evidence: Interactive browser verification was not available in the command-only environment.
+commands:
+  - go fmt ./...
+  - go test -count=1 ./...
+  - go vet ./...
+  - git diff --check
+  - git diff main...HEAD --stat
