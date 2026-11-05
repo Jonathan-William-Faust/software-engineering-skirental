@@ -26,6 +26,8 @@ hinzugefügt.
 - Globale Variablen werden vermieden; ein notwendiger Store-Singleton bleibt die
   einzige zulässige Ausnahme.
 - Fehler werden mit `fmt.Errorf("%w", err)` gewrappt und nicht verschluckt.
+- Zeitraum- und Statusregeln werden zentral in `internal/domain/` geprüft;
+  Handler und Store reichen validierte Vorgaben an diese Geschäftslogik weiter.
 
 ## Frontend-Regeln
 
@@ -35,6 +37,8 @@ hinzugefügt.
 - Die Tabs Dashboard, Ski-Verwaltung, Personen und Reservierungen bilden die
   primäre Navigation.
 - Jede Aktion öffnet ein Pop-up für Eingaben oder Bestätigung.
+- Bei neuen Ausleihen und Reservierungen fragt das Frontend zuerst den Zeitraum
+  ab und lädt anschließend die zeitraumbezogene Ski-Auswahl vom Backend.
 
 ## Fachliche Datenregeln
 
@@ -47,6 +51,11 @@ hinzugefügt.
   inklusiv. Tagespreise werden als ganze Centbeträge gespeichert.
 - Das Ausweisfoto wird als PNG oder JPEG akzeptiert; die Validierung erfolgt vor
   dem Abschluss der Registrierung.
+- Zeiträume verwenden inklusive Start- und Enddaten. Überschneidungen mit
+  aktiven Ausleihen oder Reservierungen machen einen konkreten Ski für den
+  gesamten angefragten Zeitraum nicht verfügbar.
+- Die API stellt mit `GET /api/skis/available?start_date=...&end_date=...`
+  eine zeitraumbezogene Auswahl bereit.
 
 ## Lokale Befehle
 
@@ -55,6 +64,9 @@ go run .
 go test ./...
 gofmt -w .
 go fmt ./...
+go test -race ./...
+go vet ./...
+git diff --check
 ```
 
 `golangci-lint run` wird verwendet, falls ein Linter eingerichtet ist. Das

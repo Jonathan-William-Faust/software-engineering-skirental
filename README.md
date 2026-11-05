@@ -11,15 +11,15 @@ In-Memory-Store und ein statisches HTML/JavaScript-Frontend.
 - Lokaler Server-Port: `8080`
 - Health-Endpunkt: `GET http://localhost:8080/healthz`
 - Weboberfläche: `http://localhost:8080/`
-- API: `/api/dashboard`, `/api/skis`, `/api/people`, `/api/loans` und
-  `/api/reservations`
+- API: `/api/dashboard`, `/api/skis`, `/api/skis/available`,
+  `/api/people`, `/api/loans` und `/api/reservations`
 
 ## Entwicklung
 
 ```text
 go run .
 go test ./...
-gofmt -w .
+go fmt ./...
 ```
 
 Der Server meldet sich unter `http://localhost:8080/healthz` mit
@@ -72,6 +72,7 @@ Bei einer neuen Ausleihe oder Reservierung wird der Zeitraum zuerst abgefragt.
 Danach zeigt die Auswahl ausschließlich Ski, die im gesamten inklusiven
 Zeitraum weder verliehen noch reserviert sind. Reservierungen können erst am
 gespeicherten Beginn in eine Ausleihe umgewandelt werden.
+Eine Umwandlung vor dem Reservierungsbeginn wird auch serverseitig abgelehnt.
 Für Ausleihen und Reservierungen werden Nachname und Vorname abgefragt.
 Passende Personen werden anschließend in einer Radio-Auswahl angezeigt, aus
 der genau eine Person ausgewählt werden kann. Abbrechen oder keine Treffer
@@ -115,12 +116,12 @@ git diff --check
 
 Ein separater Linter ist im Projekt nicht eingerichtet.
 
-# Ziel
+# Fachlicher Überblick
 
 Ziel ist es ein Verleihsystem für Ski zu entwickeln. Es soll als Webanwendung implementiert werden. 
 Über Reiter "Dashboard", "Ski-Verwaltung", "Personen" und "Reservierungen" soll es möglich sein, innerhalb der Webanwendung zwischen verschiedenen Seiten zu wechseln. Die Funktionsweise der Seiten soll wie folgt sein:
 
-# Dashboard
+## Dashboard
 Im Dashboard sollen die wichtigsten statistischen Größen des Skiverleihsystems auf einen Blick zu sehen sein. Diese beinhalten:
 - Anzahl verfügbarer Ski
 - Anzahl ausgeliehener Ski
@@ -128,7 +129,7 @@ Im Dashboard sollen die wichtigsten statistischen Größen des Skiverleihsystems
 - Anzahl registrierter Personen
 Über einen Schnellzugriff im Dashboard soll es möglich sein, Ski zu verwalten , neue Personen zu registrieren und neue Ausleihen anzumelden.
 
-# Ski-Verwaltung
+## Ski-Verwaltung
 In der Ski-Verwaltung sollen alle verfügbaren Ski zeilenweise in tabellarischer Struktur aufgelistet sein. Pro Ski werden die folgenden Attribute gespeichert:
 - "Ski-Id" [Format: "S-" gefolgt von einer vierstelligen Zahl]
 - "Marke"
@@ -138,7 +139,7 @@ In der Ski-Verwaltung sollen alle verfügbaren Ski zeilenweise in tabellarischer
 - "Person-Name", soll dargestellt werden als "Mieter-Name"
 Jeder bereits verliehene Ski soll einen roten Button "Leihe beenden" besitzen, über den die Miete erfolgreich beendet wird und der Ski wieder als verfügbar markiert wird.
 
-# Personen
+## Personen
 Das Personen-Tab soll aus zwei Komponenten bestehen.
 Im oberen Feld soll es möglich sein, über einen Button "Neue Person registrieren" eine neue Person zu registrieren. Durch Anklicken des Buttons soll sich ein Pop-Up Fenster öffnen, das die Attribute "Vorname", "Nachname", "Geburtsdatum", "Ausweis-Nummer", "Land", "PLZ", "Straße", "Hausnummer" und "Handynummer" abfragt. Um die Registrierung abzuschließen, soll es nötig sein, ein Ausweisfoto hochzuladen (png- oder jpeg-Format). Bei Registrierung soll einer Person automatisch eine eindeutige "Person-Id" zugewiesen werden im Format "P-" gefolgt von einer vierstelligen Zahl.
 

@@ -4,6 +4,9 @@ Die Umsetzung erfolgt in kleinen, überprüfbaren Phasen. Jede Phase endet mit
 einem lauffähigen Zwischenstand; unnötige Erweiterungen werden zugunsten eines
 klaren Prototyps zurückgestellt.
 
+Die Phasen 1 bis 6 sind umgesetzt. Die folgenden Punkte beschreiben den
+aktuellen Stand und die verbleibenden Qualitätsschritte.
+
 ## Phase 1 – Projektgerüst und lokales Git
 
 - Go-Modul und minimale Verzeichnisstruktur anlegen.
@@ -17,6 +20,10 @@ klaren Prototyps zurückgestellt.
 - ID-Formate und Statuswerte zentral festlegen.
 - Geschäftsregeln für Registrierung, Ausleihe, Rückgabe und Reservierung
   implementieren.
+- Flexible inklusive Miet- und Reservierungszeiträume sowie Preisberechnung
+  unterstützen.
+- Zeitraumbezogene Verfügbarkeit prüfen und Überschneidungen aktiver
+  Ausleihen oder Reservierungen ausschließen.
 - Fehlerfälle explizit modellieren und mit Unit-Tests absichern.
 
 ## Phase 3 – Thread-sicherer In-Memory-Store
@@ -31,7 +38,9 @@ klaren Prototyps zurückgestellt.
 - HTTP-Server und Routing aufbauen.
 - Endpoints für Dashboard-Daten, Ski, Personen, Ausleihen und Reservierungen
   ergänzen.
-- Eingaben validieren, PNG-Uploads prüfen und Fehler verständlich an Clients
+- Den Endpunkt für Ski bereitstellen, die über einen vollständigen Zeitraum
+  verfügbar sind.
+- Eingaben validieren, PNG- und JPEG-Uploads prüfen und Fehler verständlich an Clients
   zurückgeben.
 - Handler- und API-Tests für die Kernabläufe hinzufügen.
 
@@ -42,6 +51,8 @@ klaren Prototyps zurückgestellt.
 - Pop-ups für Eingaben und Bestätigungen implementieren.
 - Sichtbare Zustände und Aktionen für verfügbare, reservierte und verliehene Ski
   konsistent darstellen.
+- Zeitraum zuerst abfragen und danach ausschließlich zeitraumbezogen verfügbare
+  Ski zur Auswahl anbieten.
 
 ## Phase 6 – Integration und fachliche Durchläufe
 
@@ -49,10 +60,13 @@ klaren Prototyps zurückgestellt.
 - Registrierung mit PNG, Ausleihe, Rückgabe sowie alle Reservierungsübergänge
   manuell und automatisiert durchspielen.
 - Konsistenz der Dashboard-Kennzahlen nach jeder Zustandsänderung prüfen.
+- Prüfen, dass Reservierungen erst am Reservierungsbeginn in Ausleihen
+  umgewandelt werden können.
 
 ## Phase 7 – Qualität und Abschluss
 
-- `gofmt` und `go test ./...` ausführen; vorhandenen Linter verwenden.
+- `go fmt ./...`, `go test ./...`, `go test -race ./...`, `go vet ./...` und
+  `git diff --check` ausführen; vorhandenen Linter verwenden.
 - Fehler- und Randfälle nachschärfen, ohne den Prototyp unnötig zu vergrößern.
 - README um Start- und Bedienhinweise ergänzen.
 - Einen nachvollziehbaren lokalen Git-Verlauf mit kurzen, imperativen
