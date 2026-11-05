@@ -1,0 +1,128 @@
+metadata:
+  generated: "2026-11-05"
+  source_tasks: "specs/2026-11-05-domain-modell/plan.md"
+  last_updated: "2026-11-05"
+
+summary:
+  total_tasks: 4
+  completed_tasks: 4
+  in_progress_tasks: 0
+  pending_tasks: 0
+  completion_percentage: 100.0
+
+tasks:
+  - task_id: "T001"
+    description: "Implement domain identifiers and ski states"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "internal/domain/ids.go"
+          changes:
+            - change_type: "added"
+              description: "Added strict S-/P- identifier validation and instance-scoped ID generation."
+        - file: "internal/domain/models.go"
+          changes:
+            - change_type: "added"
+              description: "Added Ski, status values, and guarded status transitions."
+    verification:
+      build_passed: true
+      test_results:
+        command: "go test ./..."
+        passed: 6
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Identifier and status tests pass."
+    upstream_trace:
+      plan_item: "1-2"
+      requirements: ["Ski IDs", "Person IDs", "Ski statuses and transitions"]
+      full_trace: "Plan 1-2 → T001 → internal/domain/ids.go and models.go"
+  - task_id: "T002"
+    description: "Implement person registration validation"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "internal/domain/models.go"
+          changes:
+            - change_type: "added"
+              description: "Added Person, IDPhoto, and mandatory PNG validation."
+    verification:
+      build_passed: true
+      test_results:
+        command: "go test ./..."
+        passed: 6
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Valid and invalid registration paths are covered."
+    upstream_trace:
+      plan_item: "1-3"
+      requirements: ["Mandatory PNG ID photo"]
+      full_trace: "Plan 1-3 → T002 → internal/domain/models.go"
+  - task_id: "T003"
+    description: "Implement loans and reservations"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "internal/domain/service.go"
+          changes:
+            - change_type: "added"
+              description: "Added registration, loan, return, reservation, edit, conversion, and discard operations."
+        - file: "internal/domain/errors.go"
+          changes:
+            - change_type: "added"
+              description: "Added named domain errors for explicit failure handling."
+        - file: "internal/domain/models.go"
+          changes:
+            - change_type: "added"
+              description: "Added Loan and Reservation lifecycle models."
+    verification:
+      build_passed: true
+      test_results:
+        command: "go test ./..."
+        passed: 6
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Lifecycle, conflict, and invalid-return tests pass."
+    upstream_trace:
+      plan_item: "3"
+      requirements: ["Loans", "Reservations", "Explicit domain errors"]
+      full_trace: "Plan 3 → T003 → internal/domain/service.go and errors.go"
+  - task_id: "T004"
+    description: "Add domain unit tests"
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "internal/domain/domain_test.go"
+          changes:
+            - change_type: "added"
+              description: "Added unit tests for IDs, statuses, registration, loans, returns, and reservations."
+    verification:
+      build_passed: true
+      test_results:
+        command: "go test ./..."
+        passed: 6
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Full repository test suite passes."
+    upstream_trace:
+      plan_item: "4"
+      requirements: ["Domain unit tests"]
+      full_trace: "Plan 4 → T004 → internal/domain/domain_test.go"
+
+pending_tasks: []
+traceability_chain:
+  - chain_id: "TRACE-001"
+    requirement: "Domain model and business rules"
+    plan_phase: "2"
+    plan_item: "1-4"
+    tasks: ["T001", "T002", "T003", "T004"]
+    files:
+      - "internal/domain/ids.go"
+      - "internal/domain/models.go"
+      - "internal/domain/service.go"
+      - "internal/domain/errors.go"
+      - "internal/domain/domain_test.go"
+    status: "complete"

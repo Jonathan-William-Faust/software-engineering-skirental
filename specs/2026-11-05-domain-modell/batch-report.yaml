@@ -1,0 +1,53 @@
+batch_id: "B01"
+completed_tasks: ["T001", "T002", "T003", "T004"]
+blocked_tasks: []
+files_changed:
+  T001:
+    - file: "internal/domain/ids.go"
+      change_type: "created"
+      description: "Added strict identifier validation and instance-scoped generators."
+    - file: "internal/domain/models.go"
+      change_type: "created"
+      description: "Added Ski and guarded status transitions."
+  T002:
+    - file: "internal/domain/models.go"
+      change_type: "created"
+      description: "Added Person and mandatory PNG photo validation."
+  T003:
+    - file: "internal/domain/service.go"
+      change_type: "created"
+      description: "Added loan and reservation business operations."
+    - file: "internal/domain/errors.go"
+      change_type: "created"
+      description: "Added named domain errors."
+  T004:
+    - file: "internal/domain/domain_test.go"
+      change_type: "created"
+      description: "Added domain success and failure tests."
+traceability:
+  - requirement: "Domain model and business rules"
+    plan_item: "1-4"
+    task: "T001-T004"
+    files:
+      - "internal/domain/ids.go"
+      - "internal/domain/models.go"
+      - "internal/domain/service.go"
+      - "internal/domain/errors.go"
+      - "internal/domain/domain_test.go"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings: []
+test_results:
+  all:
+    command: "go test ./..."
+    passed: 6
+    failed: 0
+    skipped: 0
+    failures: []
+  formatting:
+    command: "go fmt ./..."
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []

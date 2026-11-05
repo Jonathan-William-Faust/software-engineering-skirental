@@ -1,2 +1,2 @@
-// Package domain will contain the ski rental domain model and business rules.
+// Package domain contains the ski rental domain model and business rules.
 package domain
