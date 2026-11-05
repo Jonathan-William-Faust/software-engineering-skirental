@@ -14,3 +14,17 @@
    - der Dashboard-Button vorhanden ist;
    - der Ausleih-Checkboxpfad erhalten bleibt.
 8. Spezifikation, Implementierung und Validierung werden separat committed.
+
+## Durchgeführte Nachweise
+
+- `go fmt ./...` erfolgreich.
+- `go test ./...` fachlich erfolgreich; Windows meldete beim anschließenden
+  Aufräumen wiederholt einen temporären Testdatei-Lock.
+- `go test -race -count=1 ./internal/domain ./internal/handler ./internal/store`
+  fachlich erfolgreich; auch hier trat nur der bekannte Windows-Cleanup-Lock
+  auf.
+- `go test -count=1 .` und `go vet ./...` erfolgreich.
+- `git diff --check` erfolgreich.
+- Die statische Frontend-Prüfung bestätigt den Dashboard-Button, die
+  gemeinsame Checkbox-Funktion für Reservierungen, einen POST pro
+  ausgewähltem Ski sowie die Zukunfts- und Mindestaltersprüfungen.
