@@ -19,6 +19,7 @@ wenigen Interaktionen abbilden.
 ## Fachliche Leitplanken
 
 - Ski-IDs verwenden das Format `S-` gefolgt von vier Ziffern.
+- Konkrete Ski derselben Modell-/Größenkombination haben unterschiedliche IDs.
 - Personen-IDs verwenden das Format `P-` gefolgt von vier Ziffern.
 - Ein Ski hat genau einen der Status `verfügbar`, `reserviert` oder `verliehen`.
 - Ausleihen beginnen sofort und haben ein frei wählbares inklusives Enddatum.

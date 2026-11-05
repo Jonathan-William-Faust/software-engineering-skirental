@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -27,8 +28,8 @@ func TestDefaultSkiCatalogContains100Skis(t *testing.T) {
 		t.Fatal(err)
 	}
 	skis := store.ListSkis()
-	if len(skis) != 100 {
-		t.Fatalf("seeded ski count = %d, want 100", len(skis))
+	if len(skis) != 200 {
+		t.Fatalf("seeded ski count = %d, want 200", len(skis))
 	}
 	models := make(map[string]map[int]bool)
 	ids := make(map[string]bool)
@@ -51,6 +52,15 @@ func TestDefaultSkiCatalogContains100Skis(t *testing.T) {
 	for model, sizes := range models {
 		if len(sizes) != 10 {
 			t.Fatalf("model %q has %d sizes, want 10", model, len(sizes))
+		}
+	}
+	combinations := make(map[string]int)
+	for _, ski := range skis {
+		combinations[fmt.Sprintf("%s|%s|%d", ski.Brand, ski.Model, ski.Size)]++
+	}
+	for combination, count := range combinations {
+		if count != 2 {
+			t.Fatalf("combination %q has %d copies, want 2", combination, count)
 		}
 	}
 }

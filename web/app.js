@@ -101,9 +101,9 @@ function render() {
     const activeReservations = state.reservations.filter(item =>
       field(item, "personID") === id && field(item, "status") === "aktiv");
     const reservationActions = activeReservations.length
-      ? activeReservations.map(reservation => `<button data-convert="${field(reservation, "id")}">Miete reservierter Ski beginnen</button>
-         <button data-edit-reservation="${field(reservation, "id")}">Reservierung bearbeiten</button>
-         <button data-discard="${field(reservation, "id")}">Reservierung löschen</button>`).join(" ")
+      ? `<button data-person-convert="${id}">Miete reservierter Ski beginnen</button>
+         <button data-person-edit-reservation="${id}">Reservierung bearbeiten</button>
+         <button data-person-discard="${id}">Reservierung löschen</button>`
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
     const reservationForPersonAction = `<button data-person-reservation="${id}">Reservierung anlegen</button>`;
     const action = `${editAction} ${returnActions} ${reservationActions} ${reservationForPersonAction}`;
@@ -437,11 +437,12 @@ function selectAvailableSkis(title = "Verfügbare Ski auswählen", inputName = "
 
   return new Promise(resolve => {
     const dialog = document.createElement("dialog");
-    const options = available.map(ski => {
-      const id = field(ski, "id");
-      const label = `${id} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm, ${formatPrice(field(ski, "dailyPriceCents"))}/Tag)`;
-      return `<label><input type="checkbox" name="${inputName}" value="${id}"> ${label}</label>`;
-    }).join("");
+    const groups = groupSkisByModelAndSize(available);
+    const options = groups.map(group => `
+      <label>${group.brand} ${group.model} (${group.size || "-"} cm, ${formatPrice(field(group.skis[0], "dailyPriceCents"))}/Tag)
+        <input type="number" name="${inputName}" data-ski-group="${group.key}" min="0" max="${group.skis.length}" value="0">
+        von ${group.skis.length} verfügbar
+      </label>`).join("");
     dialog.innerHTML = `
       <form method="dialog">
         <h3>${title}</h3>
@@ -452,15 +453,46 @@ function selectAvailableSkis(title = "Verfügbare Ski auswählen", inputName = "
         </div>
       </form>`;
     dialog.addEventListener("close", () => {
-      const selected = dialog.returnValue === "confirm"
-        ? [...dialog.querySelectorAll(`input[name="${inputName}"]:checked`)].map(input => input.value)
-        : [];
+      let selected = [];
+      if (dialog.returnValue === "confirm") {
+        const quantities = [...dialog.querySelectorAll(`input[name="${inputName}"]`)];
+        if (quantities.some(input => !Number.isInteger(Number(input.value)) ||
+            Number(input.value) < 0 || Number(input.value) > Number(input.max))) {
+          alert("Die gewünschte Menge überschreitet den verfügbaren Bestand.");
+        } else {
+          selected = quantities.flatMap(input => {
+            const group = groups.find(item => item.key === input.dataset.skiGroup);
+            const quantity = Number(input.value);
+            return group && quantity > 0
+              ? group.skis.slice(0, quantity).map(ski => field(ski, "id"))
+              : [];
+          });
+        }
+      }
       dialog.remove();
       resolve(selected);
     }, { once: true });
     document.body.append(dialog);
     dialog.showModal();
   });
+}
+
+function groupSkisByModelAndSize(skis) {
+  const groups = new Map();
+  for (const ski of sortSkis(skis)) {
+    const key = `${field(ski, "brand")}|${field(ski, "model")}|${field(ski, "size")}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        brand: field(ski, "brand"),
+        model: field(ski, "model"),
+        size: field(ski, "size"),
+        skis: []
+      });
+    }
+    groups.get(key).skis.push(ski);
+  }
+  return [...groups.values()];
 }
 
 function selectPersonLoans(personID) {
@@ -525,6 +557,93 @@ async function addReservationForPerson(person_id) {
   if (!period) return;
   for (const ski_id of ski_ids) {
     await request("/api/reservations", { method: "POST", body: JSON.stringify({ ski_id, person_id, ...period }) });
+  }
+  await refresh();
+}
+
+async function convertReservationsForPerson(personID) {
+  const reservations = activeReservationsForPerson(personID);
+  if (!reservations.length || !confirm("Alle reservierten Ski dieser Person in Ausleihen umwandeln?")) return;
+  for (const reservation of reservations) {
+    await request(`/api/reservations/${field(reservation, "id")}/convert`, { method: "POST" });
+  }
+  await refresh();
+}
+
+async function discardReservationsForPerson(personID) {
+  const reservations = activeReservationsForPerson(personID);
+  if (!reservations.length || !confirm("Alle Reservierungen dieser Person löschen?")) return;
+  for (const reservation of reservations) {
+    await request(`/api/reservations/${field(reservation, "id")}`, { method: "DELETE" });
+  }
+  await refresh();
+}
+
+function activeReservationsForPerson(personID) {
+  return state.reservations.filter(reservation =>
+    field(reservation, "personID") === personID && field(reservation, "status") === "aktiv");
+}
+
+function selectReservationsForEdit(personID) {
+  const reservations = activeReservationsForPerson(personID);
+  const available = sortSkis(state.skis.filter(ski => field(ski, "status") === "verfügbar"));
+  return new Promise(resolve => {
+    const dialog = document.createElement("dialog");
+    const existing = reservations.map(reservation => `
+      <label><input type="checkbox" name="existing-reservation" value="${field(reservation, "id")}" checked>
+        ${field(reservation, "skiID")} – ${formatDate(field(reservation, "startedAt"))} bis ${formatDate(field(reservation, "endDate"))}
+      </label>`).join("");
+    const newSkis = available.map(ski => {
+      const id = field(ski, "id");
+      return `<label><input type="checkbox" name="new-reservation-ski" value="${id}">
+        ${id} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm)
+      </label>`;
+    }).join("");
+    dialog.innerHTML = `
+      <form method="dialog">
+        <h3>Reservierungen bearbeiten</h3>
+        <strong>Bestehende Reservierungen</strong>
+        <div class="ski-options">${existing || "<em>Keine bestehenden Reservierungen</em>"}</div>
+        <strong>Neue verfügbare Ski</strong>
+        <div class="ski-options">${newSkis || "<em>Keine verfügbaren Ski</em>"}</div>
+        <div class="dialog-actions">
+          <button value="cancel">Abbrechen</button>
+          <button value="confirm">Auswahl übernehmen</button>
+        </div>
+      </form>`;
+    dialog.addEventListener("close", () => {
+      const result = dialog.returnValue === "confirm"
+        ? {
+          kept: [...dialog.querySelectorAll('input[name="existing-reservation"]:checked')].map(input => input.value),
+          added: [...dialog.querySelectorAll('input[name="new-reservation-ski"]:checked')].map(input => input.value)
+        }
+        : null;
+      dialog.remove();
+      resolve(result);
+    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
+async function editReservationsForPerson(personID) {
+  const reservations = activeReservationsForPerson(personID);
+  const selection = await selectReservationsForEdit(personID);
+  if (!selection) return;
+  const kept = new Set(selection.kept);
+  for (const reservation of reservations) {
+    const id = field(reservation, "id");
+    if (!kept.has(id)) await request(`/api/reservations/${id}`, { method: "DELETE" });
+  }
+  if (selection.added.length) {
+    const period = promptRentalPeriod(true);
+    if (!period) return;
+    for (const skiID of selection.added) {
+      await request("/api/reservations", {
+        method: "POST",
+        body: JSON.stringify({ ski_id: skiID, person_id: personID, ...period })
+      });
+    }
   }
   await refresh();
 }
@@ -595,6 +714,9 @@ document.addEventListener("click", async event => {
     if (event.target.dataset.personReturn) await endLoansForPerson(event.target.dataset.personReturn);
     if (event.target.dataset.action === "add-reservation") await addReservation();
     if (event.target.dataset.personReservation) await addReservationForPerson(event.target.dataset.personReservation);
+    if (event.target.dataset.personConvert) await convertReservationsForPerson(event.target.dataset.personConvert);
+    if (event.target.dataset.personEditReservation) await editReservationsForPerson(event.target.dataset.personEditReservation);
+    if (event.target.dataset.personDiscard) await discardReservationsForPerson(event.target.dataset.personDiscard);
     if (event.target.dataset.return && confirm("Ausleihe beenden?")) await request(`/api/loans/${event.target.dataset.return}`, { method: "DELETE" });
     if (event.target.dataset.convert && confirm("Reservierung in Ausleihe umwandeln?")) await request(`/api/reservations/${event.target.dataset.convert}/convert`, { method: "POST" });
     if (event.target.dataset.editReservation) await editReservation(event.target.dataset.editReservation);

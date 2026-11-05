@@ -86,8 +86,10 @@ func (store *InMemoryStore) SeedDefaultSkis() error {
 	sizes := []int{150, 155, 160, 165, 170, 175, 180, 185, 190, 195}
 	for modelIndex, item := range catalog {
 		for _, size := range sizes {
-			if _, err := store.AddSkiWithSizeAndPrice(item.brand, item.model, size, 1000+modelIndex*100); err != nil {
-				return fmt.Errorf("seed default ski catalog: %w", err)
+			for copy := 0; copy < 2; copy++ {
+				if _, err := store.AddSkiWithSizeAndPrice(item.brand, item.model, size, 1000+modelIndex*100); err != nil {
+					return fmt.Errorf("seed default ski catalog: %w", err)
+				}
 			}
 		}
 	}

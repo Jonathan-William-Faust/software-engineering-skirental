@@ -45,8 +45,8 @@ func TestSeededServerStartsWithDefaultSkiCatalog(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&skis); err != nil {
 		t.Fatal(err)
 	}
-	if len(skis) != 100 {
-		t.Fatalf("seeded ski count = %d, want 100", len(skis))
+	if len(skis) != 200 {
+		t.Fatalf("seeded ski count = %d, want 200", len(skis))
 	}
 }
 

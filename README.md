@@ -43,10 +43,10 @@ abgefragt. Ungültige, zukünftige oder zu junge Datumsangaben werden als Pop-up
 gemeldet und können direkt erneut eingegeben werden. Das Mindestalter beträgt
 18 Jahre.
 
-Beim Start werden automatisch 100 Ski angelegt: zehn real verfügbare Modelle
-mit jeweils zehn Größen von 150 bis 195 cm. Diese Startdaten stehen direkt in
-der Ski-Verwaltung zur Verfügung und werden bei jedem Neustart des
-In-Memory-Stores neu erzeugt.
+Beim Start werden automatisch 200 Ski angelegt: zehn real verfügbare Modelle
+mit jeweils zehn Größen von 150 bis 195 cm und zwei konkreten Ski je
+Modell/Größenkombination. Diese Startdaten stehen direkt in der Ski-Verwaltung
+zur Verfügung und werden bei jedem Neustart des In-Memory-Stores neu erzeugt.
 
 Zusätzlich wird die Standardperson Max Mustermann mit dem Geburtsdatum
 `01.01.2000` angelegt. In der Ski-Verwaltung erscheint für verliehene Ski in
@@ -55,15 +55,19 @@ Zustand die Buttons „Neue Ausleihe“ oder „Miete reservierter Ski beginnen�
 „Reservierung bearbeiten“ und „Reservierung löschen“ zur Verfügung. Jede Aktion
 öffnet ein Bestätigungs- oder Eingabe-Pop-up.
 
-Beim Start einer Ausleihe werden alle verfügbaren Ski in einem Auswahl-Pop-up
-mit Checkboxen angezeigt. Es können ein oder mehrere Ski ausgewählt werden;
+Beim Start einer Ausleihe werden alle verfügbaren Ski gruppiert nach Modell und
+Größe in einem Auswahl-Pop-up angezeigt. Je Kombination kann die gewünschte
+Menge angegeben werden; es können ein oder mehrere konkrete Ski ausgewählt werden;
 für jeden ausgewählten Ski wird eine eigene Ausleihe für die angegebene Person
 gestartet. Der Ausleihbeginn ist heute; das inklusive Mietende kann gewählt
 werden. Tages- und Gesamtpreis werden angezeigt. Die Auswahl steht im
 Dashboard und im Personen-Tab zur Verfügung. Reservierungen können im
 Dashboard und im Reservierungs-Tab über dieselbe Checkbox-Auswahl mit
-zukünftigem Beginn und inklusive Mietende angelegt werden. Pro Person können
-mehrere verschiedene Ski gleichzeitig reserviert werden.
+zukünftigem Beginn und inklusive Mietende angelegt werden. Pro Person können mehrere konkrete Ski, auch desselben Modells,
+gleichzeitig reserviert werden. Mehrere aktive Reservierungen einer Person
+werden im Personen-Tab über jeweils einen gemeinsamen Button zum Starten,
+Bearbeiten oder Löschen verwaltet. Beim Bearbeiten können bestehende
+Reservierungen abgewählt und neue verfügbare Ski per Checkbox ausgewählt werden.
 Für Ausleihen und Reservierungen werden Nachname und Vorname abgefragt.
 Passende Personen werden anschließend in einer Radio-Auswahl angezeigt, aus
 der genau eine Person ausgewählt werden kann. Abbrechen oder keine Treffer
