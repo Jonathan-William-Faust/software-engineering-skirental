@@ -87,10 +87,19 @@ function render() {
     const action = status === "verliehen" ? `<button data-return="${id}">Leihe beenden</button>` : "";
     return [id, field(ski, "brand"), field(ski, "model"), field(ski, "size") || "-", formatPrice(field(ski, "dailyPriceCents")), `<span class="status ${statusClass(status)}">${status}</span>`, action];
   }));
-  renderTable("#people-table", ["Person-ID", "Name", "Adresse", "Handynummer", "Ausweis-Nummer", "Ausweisdokument", "Ausgeliehene Ski", "Aktion"], [...state.people].sort(comparePeople).map(person => {
+  renderTable("#people-table", ["Person-ID", "Name", "Adresse", "Handynummer", "Ausweis-Nummer", "Ausweisdokument", "Ausgeliehene Ski", "Reservierte Ski", "Aktion"], [...state.people].sort(comparePeople).map(person => {
     const id = field(person, "id");
     const activeLoans = state.loans.filter(loan => field(loan, "personID") === id && !field(loan, "endedAt"));
     const rented = sortLoanSkis(activeLoans).map(loan => field(loan, "skiID")).join(", ");
+    const activeReservations = state.reservations.filter(item =>
+      field(item, "personID") === id && field(item, "status") === "aktiv");
+    const reserved = activeReservations.map(reservation => {
+      const skiID = field(reservation, "skiID");
+      const ski = state.skis.find(item => field(item, "id") === skiID);
+      return ski
+        ? `${skiID} – ${field(ski, "brand")} ${field(ski, "model")} (${field(ski, "size") || "-"} cm)`
+        : skiID;
+    }).join(", ");
     const address = `${field(person, "street")} ${field(person, "houseNumber")}, ${field(person, "postalCode")} ${field(person, "city")}, ${field(person, "country")}`;
     const photoAction = field(person, "idPhoto")?.dataUrl || field(person, "IDPhoto")?.DataURL
       ? `<button data-person-photo="${id}">Ausweis ansehen</button>` : "-";
@@ -98,8 +107,6 @@ function render() {
     const returnActions = activeLoans.length
       ? `<button data-person-return="${id}">Ausleihe beenden</button>`
       : "";
-    const activeReservations = state.reservations.filter(item =>
-      field(item, "personID") === id && field(item, "status") === "aktiv");
     const reservationActions = activeReservations.length
       ? `<button data-person-convert="${id}">Miete reservierter Ski beginnen</button>
          <button data-person-edit-reservation="${id}">Reservierung bearbeiten</button>
@@ -107,7 +114,7 @@ function render() {
       : `<button data-person-loan="${id}">Neue Ausleihe</button>`;
     const reservationForPersonAction = `<button data-person-reservation="${id}">Reservierung anlegen</button>`;
     const action = `${editAction} ${returnActions} ${reservationActions} ${reservationForPersonAction}`;
-    return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, address, field(person, "mobileNumber"), field(person, "identification"), photoAction, rented || "-", action];
+    return [id, `${field(person, "firstName")} ${field(person, "lastName")}`, address, field(person, "mobileNumber"), field(person, "identification"), photoAction, rented || "-", reserved || "-", action];
   }));
   renderTable("#reservation-table", ["Reservierungs-ID", "Person-ID", "Person", "Ski-ID", "Beginn", "Ende", "Preis", "Aktion"], state.reservations.filter(r => field(r, "status") === "aktiv").map(reservation => {
     const id = field(reservation, "id");
@@ -313,7 +320,7 @@ function promptRentalPeriod(allowFuture) {
   if (end_date === null) return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date) ||
       start_date < today || end_date < start_date || (!allowFuture && start_date !== today)) {
-    alert("Ungültiger Zeitraum. Bitte verwenden Sie gültige Daten; das Ende muss am oder nach dem Beginn liegen.");
+    alert("Ungültiger Zeitraum. Bitte verwenden Sie gültige Daten; das Ende muss am oder nach dem Beginn liegen. Ausleihen können nur sofort beginnen.");
     return promptRentalPeriod(allowFuture);
   }
   return { start_date, end_date };
