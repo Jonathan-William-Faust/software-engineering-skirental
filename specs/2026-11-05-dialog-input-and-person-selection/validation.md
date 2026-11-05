@@ -12,3 +12,15 @@
    - Personentreffer werden als genau-eine-Radio-Auswahl dargestellt;
    - Abbrechen oder keine Treffer öffnen keine Ski-Auswahl.
 6. Spezifikation, Implementierung und Validierung werden separat committed.
+
+## Durchgeführte Nachweise
+
+- `go fmt ./...` und `go test ./...` erfolgreich.
+- `go test -race -count=1 ./internal/domain ./internal/handler ./internal/store`
+  sowie `go test -count=1 .` erfolgreich.
+- `go vet ./...` und `git diff --check` erfolgreich.
+- Die statische Frontend-Prüfung bestätigt die verpflichtende Längenabfrage,
+  `promptRequired`, die Suche über `selectPersonByName`, die Radio-Auswahl
+  sowie die gemeinsame Ski-Checkbox-Funktion.
+- Node.js ist in der Umgebung nicht installiert; eine JavaScript-Parserprüfung
+  konnte daher nicht ausgeführt werden.
